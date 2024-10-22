@@ -1,1 +1,1 @@
-from src.datasets.example import ExampleDataset
+from src.datasets.source_separation_dataset import SourceSeparationDataset
