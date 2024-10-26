@@ -1,18 +1,18 @@
 import torch.nn as nn
 
 # segmentation в transforms нужно закинуть
+# пока внутри модели делаем
 
 
 class Encoder(nn.Module):
-    def __init__(self, L, N, *args, **kwargs):
+    def __init__(self, input_dim, output_dim, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.conv1 = nn.Conv1d(L, N, bias=False)
-        self.conv2 = nn.Conv1d(L, N, bias=False)
+        self.N = output_dim
+        self.U = nn.Conv1d(input_dim, output_dim, kernel_size=1, stride=1, bias=False)
+        self.V = nn.Conv1d(input_dim, output_dim, kernel_size=1, stride=1, bias=False)
         self.sigmoid = nn.Sigmoid()
-        self.relu = nn.ReLU(inplace=True)
-
-        self.N = L  # TODO расчитать значение N
+        self.relu = nn.ReLU()
 
     def forward(self, x):
         """
@@ -21,27 +21,25 @@ class Encoder(nn.Module):
         """
 
         # normilize x here or in transforms?
+        # here, because we will denorm back
 
         B, K, L = x.shape
+        normalization = x.norm(p=2, dim=-1, keepdim=True)
+        x = (x / (normalization + 1e-9)).view(B * K, L).unsqueeze(-1)
 
-        x = x.reshape((B * K, L))
-        x = x.unsqueeze(-1)
-
-        x_conv1 = self.conv1(x)
-        x_conv2 = self.conv2(x)
-
-        return (self.sigmoid(x_conv1) * self.relu(x_conv2)).reshape((B, K, self.N))
+        return normalization, (self.sigmoid(self.U(x)) * self.relu(self.V(x))).view(B, K, self.N)
 
 
 class Separator(nn.Module):
     def __init__(
         self,
         input_size,
-        hidden_size,
-        biderectional=True,
+        hidden_size=128,
+        bidirectional=True,
         rnn_type="LSTM",
         num_layers=1,
         dropout=0,
+        n_sources=2,
         *args,
         **kwargs
     ):
@@ -50,16 +48,16 @@ class Separator(nn.Module):
         self.rnn = getattr(nn, rnn_type)(
             input_size,
             hidden_size,
-            biderectional=biderectional,
+            bidirectional=bidirectional,
             num_layers=num_layers,
             batch_first=True,
             dropout=dropout,
         )
         # TODO many rnn blocks with skip-connections and activations.
 
-        self.output_size = hidden_size  # TODO check! hid_size * 2 for biderecational
-        self.head = nn.Linear(self.output_size, 2 * self.N)
-        self.sigmoid = nn.Sigmoid()
+        self.n_sources = n_sources
+        self.head_input_size = hidden_size  if not bidirectional else hidden_size * 2
+        self.head = nn.Linear(self.head_input_size, n_sources * input_size)
 
     def forward(self, x):
         """
@@ -67,24 +65,63 @@ class Separator(nn.Module):
         output: tensor B x K x 2N
         """
 
-        x_processed = self.rnn(x)
+        B, K, N = x.shape
+        x_processed = self.rnn(x)[0]
+        concatted_output = self.head(x_processed)
 
-        return self.sigmoid(self.head(x_processed))  # add reshpae here or in Decoder
+        return nn.functional.softmax(concatted_output.view(B, K, self.n_sources, N), dim=-1)
 
 
 class Decoder(nn.Module):
-    def __init__(self, *args, **kwargs):
+    '''
+    multiply encoded input on masks from Separator to achieve 2 samples from 1
+    in some way recover segments
+    concatenate segments
+    '''
+
+    def __init__(self, input_dim, output_dim, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # multiply encoded input on masks from Separator to achieve 2 samples from 1
-
-        # in some way recover segments
-
-        # concatenate segments
+        self.basis_decoder = nn.Linear(input_dim, output_dim, bias=False)
+    
+    def forward(self, normalization, encoded, rnn_mask):
+        encoded_masked = encoded.unsqueeze(2) * normalization.unsqueeze(2) * rnn_mask
+        basis_decoded = self.basis_decoder(encoded_masked)
+        return basis_decoded
 
 
 class TasNet(nn.Module):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self, 
+        L=50,
+        N=500,
+        n_sources=2,
+        rnn_hidden=512,
+        rnn_bidirectional=True,
+        rnn_layers=4,
+        rnn_dropout=0,
+        *args, 
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
-        # Encoder -> Separator -> Decoder
+        self.n_sources = n_sources
+        self.L = L
+        self.encoder = Encoder(L, N)
+        self.separator = Separator(
+            input_size=N, 
+            hidden_size=rnn_hidden, 
+            bidirectional=rnn_bidirectional, 
+            num_layers=rnn_layers,
+            dropout=rnn_dropout,
+            n_sources=n_sources
+        )
+        self.decoder = Decoder(N, L)
+    
+    def forward(self, mix, **batch):
+        normalization, weights = self.encoder(mix.view(mix.shape[0], mix.shape[1] // self.L, self.L))
+        rnn_masks = self.separator(weights)
+        processed_sources = self.decoder(normalization, weights, rnn_masks)
+        output = {}
+        for i in range(self.n_sources):
+            output[f"source_{i}"] = processed_sources[:, :, i, :].contiguous().view(mix.shape)
+        return output
