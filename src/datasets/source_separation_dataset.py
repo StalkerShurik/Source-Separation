@@ -1,6 +1,6 @@
 import json
-from pathlib import Path
 import typing as tp
+from pathlib import Path
 
 import torchaudio
 
@@ -8,14 +8,9 @@ from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import DATA_PATH
 
 
-
 class SourceSeparationDataset(BaseDataset):
     def __init__(
-            self,
-            part: str,
-            dataset_dir: str | Path = "dla_dataset",
-            *args,
-            **kwargs
+        self, part: str, dataset_dir: str | Path = "dla_dataset", *args, **kwargs
     ) -> None:
         self._data_dir = DATA_PATH / dataset_dir
 
@@ -55,7 +50,7 @@ class SourceSeparationDataset(BaseDataset):
 
         return instance_data
 
-    def _get_or_load_index(self, part):
+    def _get_or_load_index(self, part: str | Path) -> tp.List[tp.Dict[str, tp.Any]]:
         index_path = self._data_dir / f"{part}_index.json"
         if index_path.exists():
             with index_path.open() as f:
@@ -66,7 +61,7 @@ class SourceSeparationDataset(BaseDataset):
                 json.dump(index, f, indent=2)
         return index
 
-    def _create_index(self, part):
+    def _create_index(self, part: str | Path) -> tp.List[tp.Dict[str, tp.Any]]:
         index = []
         split_dir = self._data_dir / "audio" / part
         mix_dir = split_dir / "mix"
