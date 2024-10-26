@@ -1,6 +1,6 @@
 train:
   _target_: src.datasets.SourceSeparationDataset
-  name: "val"
+  part: "val"
 val:
   _target_: src.datasets.SourceSeparationDataset
-  name: "val"
+  part: "val"
