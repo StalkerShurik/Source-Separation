@@ -56,21 +56,31 @@ class Separator(nn.Module):
             dropout=dropout,
         )
         # TODO many rnn blocks with skip-connections and activations.
-        self.output_size = 228  # todo
-        self.head = nn.Linear(
-            self.output_size,
-        )
+
+        self.output_size = hidden_size  # TODO check! hid_size * 2 for biderecational
+        self.head = nn.Linear(self.output_size, 2 * self.N)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
+        """
+        input: tensor B x K x N
+        output: tensor B x K x 2N
+        """
+
         x_processed = self.rnn(x)
 
-        return self.sigmoid(self.head(x_processed))
+        return self.sigmoid(self.head(x_processed))  # add reshpae here or in Decoder
 
 
 class Decoder(nn.Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # multiply encoded input on masks from Separator to achieve 2 samples from 1
+
+        # in some way recover segments
+
+        # concatenate segments
 
 
 class TasNet(nn.Module):
