@@ -1,36 +1,30 @@
 import json
-import os
 from pathlib import Path
+import typing as tp
 
 import torchaudio
-import wget
-from tqdm import tqdm
 
 from src.datasets.base_dataset import BaseDataset
-from src.utils.io_utils import ROOT_PATH
+from src.utils.io_utils import DATA_PATH
 
-data_dir = "dla_datasets"
 
 
 class SourceSeparationDataset(BaseDataset):
-    def __init__(self, part, data_dir=None, *args, **kwargs):
-        if not isinstance(part, str):
-            raise TypeError("part must be string")
-
-        if part not in ["train", "val", "test"]:
-            raise ValueError("only train, val, test parts are supported")
-
-        if data_dir is None:
-            data_dir = ROOT_PATH / "dla_dataset"
-
-        self._data_dir = data_dir
+    def __init__(
+            self,
+            part: str,
+            dataset_dir: str | Path = "dla_dataset",
+            *args,
+            **kwargs
+    ) -> None:
+        self._data_dir = DATA_PATH / dataset_dir
 
         index = self._get_or_load_index(part)
         self._part = part
 
         super().__init__(index, *args, **kwargs)
 
-    def __getitem__(self, ind):
+    def __getitem__(self, ind: int) -> tp.Dict[str, tp.Any]:
         """
         Get element from the index, preprocess it, and combine it
         into a dict.
@@ -75,57 +69,22 @@ class SourceSeparationDataset(BaseDataset):
     def _create_index(self, part):
         index = []
         split_dir = self._data_dir / "audio" / part
-        if not split_dir.exists():
-            raise Exception(
-                "Wrong dataset structure. It must contain audio folder with at least one of train/test/val folders"
-            )
-
         mix_dir = split_dir / "mix"
 
-        if not split_dir.exists():
-            raise Exception(f"Wrong dataset structure. {part} must contain mix folder")
-
-        mix_paths = set()
-
-        for dirpath, dirnames, filenames in os.walk(str(mix_dir)):
-            mix_paths = filenames
-
-        mouths_dir = self._data_dir / "mouths"
-
-        if not mouths_dir.exists():
-            raise Exception(f"{mouths_dir} doesnt exists")
-
-        if part == "test":
-            for path in mix_paths:
-                # mouth_path = mouths_dir / (path[:-3] + "npz")
-                # if not mouth_path.exists():
-                #     raise Exception(f"{mouth_path} doesnt exists")
-                index.append(
+        for path in sorted(mix_dir.iterdir()):
+            assert path.is_file()
+            row = {
+                "mix": str(path),
+            }
+            if part != "test":
+                s1_path = split_dir / "s1" / path.name
+                s2_path = split_dir / "s2" / path.name
+                assert s1_path.is_file() and s2_path.is_file()
+                row.update(
                     {
-                        "mix": str(mix_dir / path),
-                        # "mouth": str(mouth_path)
-                    }
-                )
-        else:
-            for path in mix_paths:
-                s1_path = split_dir / "s1" / path
-                s2_path = split_dir / "s2" / path
-                # mouth_path = mouths_dir / (path[:-3] + "npz")
-                if not s1_path.exists():
-                    raise Exception(f"{s1_path} doesnt exists")
-
-                if not s2_path.exists():
-                    raise Exception(f"{s2_path} doesnt exists")
-
-                # if not mouth_path.exists():
-                #     raise Exception(f"{mouth_path} doesnt exists")
-
-                index.append(
-                    {
-                        "mix": str(mix_dir / path),
-                        # "mouth": str(mouth_path),
                         "s1": str(s1_path),
                         "s2": str(s2_path),
                     }
                 )
+            index.append(row)
         return index
