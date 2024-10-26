@@ -1,5 +1,5 @@
 defaults:
-  - model: baseline
+  - model: tasnet
   - writer: wandb
   - metrics: example
   - datasets: example
