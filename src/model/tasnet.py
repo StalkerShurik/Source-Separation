@@ -4,17 +4,33 @@ import torch.nn as nn
 
 
 class Encoder(nn.Module):
-    def __init__(self, input_size, *args, **kwargs):
+    def __init__(self, L, N, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.conv = nn.Conv1d(input_size)
+        self.conv1 = nn.Conv1d(L, N, bias=False)
+        self.conv2 = nn.Conv1d(L, N, bias=False)
         self.sigmoid = nn.Sigmoid()
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x):
-        x_conv = self.conv(x)
+        self.N = L  # TODO расчитать значение N
 
-        return self.sigmoid(x_conv) * self.relu(x_conv)
+    def forward(self, x):
+        """
+        input: tensor B x K x L
+        output: tensot B x K x N
+        """
+
+        # normilize x here or in transforms?
+
+        B, K, L = x.shape
+
+        x = x.reshape((B * K, L))
+        x = x.unsqueeze(-1)
+
+        x_conv1 = self.conv1(x)
+        x_conv2 = self.conv2(x)
+
+        return (self.sigmoid(x_conv1) * self.relu(x_conv2)).reshape((B, K, self.N))
 
 
 class Separator(nn.Module):
