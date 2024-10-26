@@ -15,6 +15,8 @@ class SourceSeparationDataset(BaseDataset):
         self._data_dir = DATA_PATH / dataset_dir
 
         index = self._get_or_load_index(part)
+        if part not in ("train", "val", "test"):
+            raise ValueError(f"Invalid part {part}")
         self._part = part
 
         super().__init__(index, *args, **kwargs)
@@ -65,6 +67,8 @@ class SourceSeparationDataset(BaseDataset):
         index = []
         split_dir = self._data_dir / "audio" / part
         mix_dir = split_dir / "mix"
+
+        assert mix_dir.exists()
 
         for path in sorted(mix_dir.iterdir()):
             assert path.is_file()
