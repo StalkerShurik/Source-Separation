@@ -1,10 +1,11 @@
 import torch
+from torchmetrics.functional.audio.sdr import scale_invariant_signal_distortion_ratio
 
 from src.metrics.base_metric import BaseMetric
 
 
-class ExampleMetric(BaseMetric):
-    def __init__(self, metric, device, *args, **kwargs):
+class SiSNR(BaseMetric):
+    def __init__(self, device, *args, **kwargs):
         """
         Example of a nested metric class. Applies metric function
         object (for example, from TorchMetrics) on tensors.
@@ -17,11 +18,8 @@ class ExampleMetric(BaseMetric):
             device (str): device for the metric calculation (and tensors).
         """
         super().__init__(*args, **kwargs)
-        if device == "auto":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.metric = metric.to(device)
 
-    def __call__(self, logits: torch.Tensor, labels: torch.Tensor, **kwargs):
+    def __call__(self, target, prediction, **kwargs):
         """
         Metric calculation logic.
 
@@ -31,5 +29,4 @@ class ExampleMetric(BaseMetric):
         Returns:
             metric (float): calculated metric.
         """
-        classes = logits.argmax(dim=-1)
-        return self.metric(classes, labels)
+        return scale_invariant_signal_distortion_ratio(target, prediction, zero_mean=True)

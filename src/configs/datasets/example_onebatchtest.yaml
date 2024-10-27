@@ -1,6 +1,8 @@
 train:
   _target_: src.datasets.SourceSeparationDataset
   part: "val"
+  limit: 2
 val:
   _target_: src.datasets.SourceSeparationDataset
   part: "val"
+  limit: 2

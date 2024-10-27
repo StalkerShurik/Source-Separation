@@ -123,5 +123,5 @@ class TasNet(nn.Module):
         processed_sources = self.decoder(normalization, weights, rnn_masks)
         output = {}
         for i in range(self.n_sources):
-            output[f"source_{i}"] = processed_sources[:, :, i, :].contiguous().view(mix.shape)
+            output[f"predicted_source{i + 1}"] = processed_sources[:, :, i, :].contiguous().view(mix.shape)
         return output

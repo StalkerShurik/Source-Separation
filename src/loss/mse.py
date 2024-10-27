@@ -2,16 +2,23 @@ import torch
 from torch import nn
 
 
-class ExampleLoss(nn.Module):
+class SignalMSELoss(nn.Module):
     """
     Example of a loss function to use.
     """
 
     def __init__(self):
         super().__init__()
-        self.loss = nn.CrossEntropyLoss()
+        self.loss = nn.MSELoss()
 
-    def forward(self, logits: torch.Tensor, labels: torch.Tensor, **batch):
+    def forward(
+            self, 
+            source1: torch.Tensor, 
+            source2: torch.Tensor, 
+            predicted_source1: torch.Tensor, 
+            predicted_source2: torch.Tensor, 
+            **batch
+        ):
         """
         Loss function calculation logic.
 
@@ -29,4 +36,6 @@ class ExampleLoss(nn.Module):
         Returns:
             losses (dict): dict containing calculated loss functions.
         """
-        return {"loss": self.loss(logits, labels)}
+        l1 = self.loss(source1, predicted_source1) + self.loss(source2, predicted_source2)
+        l2 = self.loss(source1, predicted_source2) + self.loss(source2, predicted_source1)
+        return {"loss": l1 if l1 < l2 else l2}
