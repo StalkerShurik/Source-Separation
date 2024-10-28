@@ -3,10 +3,6 @@ from torch import nn
 
 
 class SignalMSELoss(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.loss = nn.MSELoss()
-
     def forward(
         self,
         source_1: torch.Tensor,
@@ -26,10 +22,10 @@ class SignalMSELoss(nn.Module):
         Returns:
             loss_dict (dict[str, torch.Tensor]): dict containing loss
         """
-        l1 = self.loss(source_1, predicted_source_1) + self.loss(
-            source_2, predicted_source_2
-        )
-        l2 = self.loss(source_1, predicted_source_2) + self.loss(
-            source_2, predicted_source_1
-        )
-        return {"loss": l1 if l1 < l2 else l2}
+        first_order_loss = (
+            (source_1 - predicted_source_1) ** 2 + (source_2 - predicted_source_2) ** 2
+        ).mean(dim=1)
+        second_order_loss = torch.max(
+            (source_1 - predicted_source_2) ** 2 + (source_2 - predicted_source_1) ** 2,
+        ).mean(dim=1)
+        return {"loss": torch.max(first_order_loss, second_order_loss).mean()}
