@@ -12,6 +12,11 @@ class SourceSeparationDataset(BaseDataset):
     def __init__(
         self, part: str, dataset_dir: str | Path = "dla_dataset", *args, **kwargs
     ) -> None:
+        """
+        Args:
+            part (str | Path): part of dataset(test/train/val)
+            dataset_dir (Path | str): path to dataset
+        """
         self._data_dir = DATA_PATH / dataset_dir
 
         index = self._get_or_load_index(part)
@@ -21,7 +26,7 @@ class SourceSeparationDataset(BaseDataset):
 
         super().__init__(index, *args, **kwargs)
 
-    def __getitem__(self, ind: int) -> tp.Dict[str, tp.Any]:
+    def __getitem__(self, ind: int) -> dict[str, tp.Any]:
         """
         Get element from the index, preprocess it, and combine it
         into a dict.
@@ -41,10 +46,10 @@ class SourceSeparationDataset(BaseDataset):
         instance_data = {"mix": mix_data}
 
         if self._part != "test":
-            instance_data["source1"] = torchaudio.load(
+            instance_data["source_1"] = torchaudio.load(
                 data_dict["s1"], backend="soundfile"
             )
-            instance_data["source2"] = torchaudio.load(
+            instance_data["source_2"] = torchaudio.load(
                 data_dict["s2"], backend="soundfile"
             )
 
@@ -52,7 +57,15 @@ class SourceSeparationDataset(BaseDataset):
 
         return instance_data
 
-    def _get_or_load_index(self, part: str | Path) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _get_or_load_index(self, part: str | Path) -> list[dict[str, tp.Any]]:
+        """
+        Get index from json file or build it
+
+        Args:
+            part (str | Path): part of dataset(test/train/val)
+        Returns:
+            index (list[dict[str, tp.Any]])
+        """
         index_path = self._data_dir / f"{part}_index.json"
         if index_path.exists():
             with index_path.open() as f:
@@ -63,7 +76,15 @@ class SourceSeparationDataset(BaseDataset):
                 json.dump(index, f, indent=2)
         return index
 
-    def _create_index(self, part: str | Path) -> tp.List[tp.Dict[str, tp.Any]]:
+    def _create_index(self, part: str | Path) -> list[dict[str, tp.Any]]:
+        """
+        Build index for dataset
+
+        Args:
+            part (str | Path): part of dataset(test/train/val)
+        Returns:
+            index (list[dict[str, tp.Any]])
+        """
         index = []
         split_dir = self._data_dir / "audio" / part
         mix_dir = split_dir / "mix"
