@@ -1,8 +1,10 @@
 _target_: src.model.TasNet
-L: 50
+L: 40
 N: 500
 n_sources: 2
-rnn_hidden: 512
+rnn_hidden: 500
 rnn_bidirectional: True
+rnn_type: "LSTM"
 rnn_layers: 4
 rnn_dropout: 0
+rnn_layers_activation: "Identity"

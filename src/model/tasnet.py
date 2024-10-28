@@ -36,30 +36,44 @@ class Separator(nn.Module):
     def __init__(
         self,
         input_size,
-        hidden_size=128,
+        hidden_size=500,
         bidirectional=True,
         rnn_type="LSTM",
-        num_layers=1,
+        num_layers=4,
         dropout=0,
         n_sources=2,
+        rnn_layers_activation="Identity",
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
-        self.rnn = getattr(nn, rnn_type)(
-            input_size,
-            hidden_size,
-            bidirectional=bidirectional,
-            num_layers=num_layers,
-            batch_first=True,
-            dropout=dropout,
-        )
+        rnn_output_size = hidden_size if not bidirectional else hidden_size * 2
+        self.num_layers = num_layers
+        self.rnn_layers = []
+        for layer_index in range(num_layers):
+            self.rnn_layers.append(
+                getattr(nn, rnn_type)(
+                    input_size if layer_index == 0 else rnn_output_size,
+                    hidden_size,
+                    bidirectional=bidirectional,
+                    num_layers=1,
+                    batch_first=True,
+                    dropout=dropout,
+                )
+            )
+        self.rnn_layers = nn.ParameterList(self.rnn_layers)
+        self.rnn_layers_activation = getattr(nn, rnn_layers_activation)()
+
+        for name, param in self.rnn_layers.named_parameters():
+            if "bias" in name:
+                nn.init.zeros_(param)
+            else:
+                nn.init.xavier_normal(param)
         # TODO many rnn blocks with skip-connections and activations.
 
         self.n_sources = n_sources
-        self.head_input_size = hidden_size if not bidirectional else hidden_size * 2
-        self.head = nn.Linear(self.head_input_size, n_sources * input_size)
+        self.head = nn.Linear(rnn_output_size, n_sources * input_size)
 
     def forward(self, x):
         """
@@ -68,7 +82,19 @@ class Separator(nn.Module):
         """
 
         B, K, N = x.shape
-        x_processed = self.rnn(x)[0]
+        x_processed = x
+        prev_even, prev_odd = None, None
+
+        for layer_index in range(self.num_layers):
+            x_processed = self.rnn_layers[layer_index](x_processed)[0]
+            if layer_index - 3 >= 1:
+                x_processed += prev_even if layer_index % 2 == 1 else prev_odd
+            x_processed = self.rnn_layers_activation(x_processed)
+
+            if layer_index % 2 == 1:
+                prev_even = x_processed
+            else:
+                prev_odd = x_processed
         concatted_output = self.head(x_processed)
 
         return nn.functional.softmax(
@@ -96,13 +122,15 @@ class Decoder(nn.Module):
 class TasNet(nn.Module):
     def __init__(
         self,
-        L=50,
+        L=40,
         N=500,
         n_sources=2,
-        rnn_hidden=512,
+        rnn_hidden=500,
         rnn_bidirectional=True,
+        rnn_type="LSTM",
         rnn_layers=4,
         rnn_dropout=0,
+        rnn_layers_activation="Identity",
         *args,
         **kwargs,
     ):
@@ -115,9 +143,11 @@ class TasNet(nn.Module):
             input_size=N,
             hidden_size=rnn_hidden,
             bidirectional=rnn_bidirectional,
+            rnn_type=rnn_type,
             num_layers=rnn_layers,
             dropout=rnn_dropout,
             n_sources=n_sources,
+            rnn_layers_activation=rnn_layers_activation,
         )
         self.decoder = Decoder(N, L)
 
