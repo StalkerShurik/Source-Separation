@@ -3,39 +3,33 @@ from torch import nn
 
 
 class SignalMSELoss(nn.Module):
-    """
-    Example of a loss function to use.
-    """
-
     def __init__(self):
         super().__init__()
         self.loss = nn.MSELoss()
 
     def forward(
-            self, 
-            source1: torch.Tensor, 
-            source2: torch.Tensor, 
-            predicted_source1: torch.Tensor, 
-            predicted_source2: torch.Tensor, 
-            **batch
-        ):
+        self,
+        source_1: torch.Tensor,
+        source_2: torch.Tensor,
+        predicted_source_1: torch.Tensor,
+        predicted_source_2: torch.Tensor,
+        **kwargs
+    ):
         """
-        Loss function calculation logic.
-
-        Note that loss function must return dict. It must contain a value for
-        the 'loss' key. If several losses are used, accumulate them into one 'loss'.
-        Intermediate losses can be returned with other loss names.
-
-        For example, if you have loss = a_loss + 2 * b_loss. You can return dict
-        with 3 keys: 'loss', 'a_loss', 'b_loss'. You can log them individually inside
-        the writer. See config.writer.loss_names.
+        Calculates MSE for predicted and ground truth signals.
 
         Args:
-            logits (Tensor): model output predictions.
-            labels (Tensor): ground-truth labels.
+            source_1 (torch.Tensor): ground truth signal 1
+            source_2 (torch.Tensor): ground truth signal 2
+            predicted_source_1 (torch.Tensor): predicted signal 1
+            predicted_source_2 (torch.Tensor): predicted signal 2
         Returns:
-            losses (dict): dict containing calculated loss functions.
+            loss_dict (dict[str, torch.Tensor]): dict containing loss
         """
-        l1 = self.loss(source1, predicted_source1) + self.loss(source2, predicted_source2)
-        l2 = self.loss(source1, predicted_source2) + self.loss(source2, predicted_source1)
+        l1 = self.loss(source_1, predicted_source_1) + self.loss(
+            source_2, predicted_source_2
+        )
+        l2 = self.loss(source_1, predicted_source_2) + self.loss(
+            source_2, predicted_source_1
+        )
         return {"loss": l1 if l1 < l2 else l2}
