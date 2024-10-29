@@ -122,16 +122,16 @@ class Decoder(nn.Module):
 class TasNet(nn.Module):
     def __init__(
         self,
-        L : int = 40,
-        N : int = 500,
-        n_sources : int = 2,
-        rnn_hidden : int = 500,
-        rnn_bidirectional : bool = True,
-        rnn_type : str = "LSTM",
-        rnn_layers : int = 4,
-        rnn_dropout : float = 0.0,
-        rnn_bias : bool = True,
-        rnn_layers_activation : str = "Identity",
+        L: int = 40,
+        N: int = 500,
+        n_sources: int = 2,
+        rnn_hidden: int = 500,
+        rnn_bidirectional: bool = True,
+        rnn_type: str = "LSTM",
+        rnn_layers: int = 4,
+        rnn_dropout: float = 0.0,
+        rnn_bias: bool = True,
+        rnn_layers_activation: str = "Identity",
         *args,
         **kwargs,
     ):
@@ -153,18 +153,14 @@ class TasNet(nn.Module):
         )
         self.decoder = Decoder(N, L)
 
-    def forward(
-        self, 
-        mix : torch.Tensor, 
-        **batch
-    ):
+    def forward(self, mix: torch.Tensor, **batch):
         normalization, weights = self.encoder(
             mix.view(mix.shape[0], mix.shape[1] // self.L, self.L)
         )
         rnn_masks = self.separator(weights)
         processed_sources = self.decoder(normalization, weights, rnn_masks).permute(
             (0, 2, 1, 3)
-        )
+        )  # decoder returns tensor of shape B x K x 2 x L
         return {
             "predict": processed_sources.reshape((mix.shape[0], self.n_sources, -1))
         }
