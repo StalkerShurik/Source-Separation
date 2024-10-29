@@ -18,8 +18,8 @@ for batch in dataloader_train:
     print(batch)
 
     print(len(batch["mix"]))
-    print(len(batch["source1"]))
-    print(len(batch["source2"]))
+    print(len(batch["source_1"]))
+    print(len(batch["source_2"]))
 
     break
 
