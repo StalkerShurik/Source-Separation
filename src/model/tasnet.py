@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 # segmentation в transforms нужно закинуть
@@ -83,18 +84,15 @@ class Separator(nn.Module):
 
         B, K, N = x.shape
         x_processed = x
-        prev_even, prev_odd = None, None
+        skip_connection_data = None
 
         for layer_index in range(self.num_layers):
+            skip_connection_new_data = x_processed
             x_processed = self.rnn_layers[layer_index](x_processed)[0]
             if layer_index - 3 >= 1:
-                x_processed += prev_even if layer_index % 2 == 1 else prev_odd
-            x_processed = self.rnn_layers_activation(x_processed)
+                x_processed += skip_connection_data
+            skip_connection_data = skip_connection_new_data
 
-            if layer_index % 2 == 1:
-                prev_even = x_processed
-            else:
-                prev_odd = x_processed
         concatted_output = self.head(x_processed)
 
         return nn.functional.softmax(
@@ -122,15 +120,15 @@ class Decoder(nn.Module):
 class TasNet(nn.Module):
     def __init__(
         self,
-        L=40,
-        N=500,
-        n_sources=2,
-        rnn_hidden=500,
-        rnn_bidirectional=True,
-        rnn_type="LSTM",
-        rnn_layers=4,
-        rnn_dropout=0,
-        rnn_layers_activation="Identity",
+        L : int = 40,
+        N : int = 500,
+        n_sources : int = 2,
+        rnn_hidden : int = 500,
+        rnn_bidirectional : bool = True,
+        rnn_type : str = "LSTM",
+        rnn_layers : int = 4,
+        rnn_dropout : float =0.0,
+        rnn_layers_activation : str = "Identity",
         *args,
         **kwargs,
     ):
@@ -151,7 +149,11 @@ class TasNet(nn.Module):
         )
         self.decoder = Decoder(N, L)
 
-    def forward(self, mix, **batch):
+    def forward(
+        self, 
+        mix : torch.Tensor, 
+        **batch
+    ):
         normalization, weights = self.encoder(
             mix.view(mix.shape[0], mix.shape[1] // self.L, self.L)
         )
