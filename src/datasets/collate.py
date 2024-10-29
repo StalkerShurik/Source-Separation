@@ -15,8 +15,9 @@ def collate_fn(dataset_items: list[dict]):
     """
 
     result_batch = {}
-
     for key in dataset_items[0].keys():
-        result_batch[key] = torch.vstack([sample[key][0] for sample in dataset_items])
+        result_batch[key] = torch.stack(
+            [sample[key][0] for sample in dataset_items], dim=0
+        )
 
     return result_batch
