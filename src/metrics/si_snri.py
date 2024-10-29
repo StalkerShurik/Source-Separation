@@ -8,7 +8,7 @@ from src.utils.metric_utls import compute_metric
 class SiSNRI(BaseMetric):
     def __call__(
         self, mix: torch.Tensor, target: torch.Tensor, predict: torch.Tensor, **kwargs
-    ):
+    ) -> float:
         """
         Metric calculation logic.
 
