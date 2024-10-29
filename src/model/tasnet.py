@@ -126,10 +126,9 @@ class TasNet(nn.Module):
             mix.view(mix.shape[0], mix.shape[1] // self.L, self.L)
         )
         rnn_masks = self.separator(weights)
-        processed_sources = self.decoder(normalization, weights, rnn_masks)
-        output = {}
-        for i in range(self.n_sources):
-            output[f"predicted_source_{i + 1}"] = (
-                processed_sources[:, :, i, :].contiguous().view(mix.shape)
-            )
-        return output
+        processed_sources = self.decoder(normalization, weights, rnn_masks).permute(
+            (0, 2, 1, 3)
+        )
+        return {
+            "predict": processed_sources.reshape((mix.shape[0], self.n_sources, -1))
+        }
