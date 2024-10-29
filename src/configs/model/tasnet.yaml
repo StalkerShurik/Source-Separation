@@ -7,4 +7,5 @@ rnn_bidirectional: True
 rnn_type: "LSTM"
 rnn_layers: 4
 rnn_dropout: 0
+rnn_bias: True
 rnn_layers_activation: "Identity"

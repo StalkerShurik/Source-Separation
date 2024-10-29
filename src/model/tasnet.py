@@ -42,6 +42,7 @@ class Separator(nn.Module):
         rnn_type="LSTM",
         num_layers=4,
         dropout=0,
+        bias=True,
         n_sources=2,
         rnn_layers_activation="Identity",
         *args,
@@ -61,6 +62,7 @@ class Separator(nn.Module):
                     num_layers=1,
                     batch_first=True,
                     dropout=dropout,
+                    bias=bias,
                 )
             )
         self.rnn_layers = nn.ParameterList(self.rnn_layers)
@@ -127,7 +129,8 @@ class TasNet(nn.Module):
         rnn_bidirectional : bool = True,
         rnn_type : str = "LSTM",
         rnn_layers : int = 4,
-        rnn_dropout : float =0.0,
+        rnn_dropout : float = 0.0,
+        rnn_bias : bool = True,
         rnn_layers_activation : str = "Identity",
         *args,
         **kwargs,
@@ -144,6 +147,7 @@ class TasNet(nn.Module):
             rnn_type=rnn_type,
             num_layers=rnn_layers,
             dropout=rnn_dropout,
+            bias=rnn_bias,
             n_sources=n_sources,
             rnn_layers_activation=rnn_layers_activation,
         )
