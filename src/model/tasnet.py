@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 # segmentation в transforms нужно закинуть
@@ -36,30 +37,46 @@ class Separator(nn.Module):
     def __init__(
         self,
         input_size,
-        hidden_size=128,
+        hidden_size=500,
         bidirectional=True,
         rnn_type="LSTM",
-        num_layers=1,
+        num_layers=4,
         dropout=0,
+        bias=True,
         n_sources=2,
+        rnn_layers_activation="Identity",
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
-        self.rnn = getattr(nn, rnn_type)(
-            input_size,
-            hidden_size,
-            bidirectional=bidirectional,
-            num_layers=num_layers,
-            batch_first=True,
-            dropout=dropout,
-        )
+        rnn_output_size = hidden_size if not bidirectional else hidden_size * 2
+        self.num_layers = num_layers
+        self.rnn_layers = []
+        for layer_index in range(num_layers):
+            self.rnn_layers.append(
+                getattr(nn, rnn_type)(
+                    input_size if layer_index == 0 else rnn_output_size,
+                    hidden_size,
+                    bidirectional=bidirectional,
+                    num_layers=1,
+                    batch_first=True,
+                    dropout=dropout,
+                    bias=bias,
+                )
+            )
+        self.rnn_layers = nn.ParameterList(self.rnn_layers)
+        self.rnn_layers_activation = getattr(nn, rnn_layers_activation)()
+
+        for name, param in self.rnn_layers.named_parameters():
+            if "bias" in name:
+                nn.init.zeros_(param)
+            else:
+                nn.init.xavier_normal(param)
         # TODO many rnn blocks with skip-connections and activations.
 
         self.n_sources = n_sources
-        self.head_input_size = hidden_size if not bidirectional else hidden_size * 2
-        self.head = nn.Linear(self.head_input_size, n_sources * input_size)
+        self.head = nn.Linear(rnn_output_size, n_sources * input_size)
 
     def forward(self, x):
         """
@@ -68,7 +85,16 @@ class Separator(nn.Module):
         """
 
         B, K, N = x.shape
-        x_processed = self.rnn(x)[0]
+        x_processed = x
+        skip_connection_data = None
+
+        for layer_index in range(self.num_layers):
+            skip_connection_new_data = x_processed
+            x_processed = self.rnn_layers[layer_index](x_processed)[0]
+            if layer_index - 3 >= 1:
+                x_processed += skip_connection_data
+            skip_connection_data = skip_connection_new_data
+
         concatted_output = self.head(x_processed)
 
         return nn.functional.softmax(
@@ -96,13 +122,16 @@ class Decoder(nn.Module):
 class TasNet(nn.Module):
     def __init__(
         self,
-        L=50,
-        N=500,
-        n_sources=2,
-        rnn_hidden=512,
-        rnn_bidirectional=True,
-        rnn_layers=4,
-        rnn_dropout=0,
+        L : int = 40,
+        N : int = 500,
+        n_sources : int = 2,
+        rnn_hidden : int = 500,
+        rnn_bidirectional : bool = True,
+        rnn_type : str = "LSTM",
+        rnn_layers : int = 4,
+        rnn_dropout : float = 0.0,
+        rnn_bias : bool = True,
+        rnn_layers_activation : str = "Identity",
         *args,
         **kwargs,
     ):
@@ -115,13 +144,20 @@ class TasNet(nn.Module):
             input_size=N,
             hidden_size=rnn_hidden,
             bidirectional=rnn_bidirectional,
+            rnn_type=rnn_type,
             num_layers=rnn_layers,
             dropout=rnn_dropout,
+            bias=rnn_bias,
             n_sources=n_sources,
+            rnn_layers_activation=rnn_layers_activation,
         )
         self.decoder = Decoder(N, L)
 
-    def forward(self, mix, **batch):
+    def forward(
+        self, 
+        mix : torch.Tensor, 
+        **batch
+    ):
         normalization, weights = self.encoder(
             mix.view(mix.shape[0], mix.shape[1] // self.L, self.L)
         )
