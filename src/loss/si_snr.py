@@ -1,38 +1,29 @@
 import torch
 from torch import nn
+from torchmetrics.functional.audio.sdr import scale_invariant_signal_distortion_ratio
 
-from src.utils import sisnr_utls
+from src.utils import metric_utls
 
 
 class SiSNRLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(
-        self,
-        source_1: torch.Tensor,
-        source_2: torch.Tensor,
-        predicted_source_1: torch.Tensor,
-        predicted_source_2: torch.Tensor,
-        **kwargs
-    ):
+    def forward(self, target: torch.Tensor, predict: torch.Tensor, **kwargs):
         """
         Calculates SI-SNR for predicted and ground truth signals
         (get maximum for all permutations)
 
         Args:
-            source_1 (torch.Tensor): ground truth signal 1
-            source_2 (torch.Tensor): ground truth signal 2
-            predicted_source_1 (torch.Tensor): predicted signal 1
-            predicted_source_2 (torch.Tensor): predicted signal 2
+            target (torch.Tensor): ground truth signal of size B x S x T
+            predict (torch.Tensor): predicted signal of size B x S x T
         Returns:
             loss_dict (dict[str, torch.Tensor]): dict containing loss
         """
-        loss = sisnr_utls.compute_pair_sisnr(
-            predicted_1=predicted_source_1,
-            predicted_2=predicted_source_2,
-            target_1=source_1,
-            target_2=source_2,
+        loss = metric_utls.compute_metric(
+            target=target,
+            predict=predict,
+            metric=scale_invariant_signal_distortion_ratio,
         )
 
         return {"loss": -loss.mean()}
