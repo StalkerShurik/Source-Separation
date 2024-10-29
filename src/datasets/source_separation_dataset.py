@@ -2,6 +2,7 @@ import json
 import typing as tp
 from pathlib import Path
 
+import torch
 import torchaudio
 
 from src.datasets.base_dataset import BaseDataset
@@ -42,19 +43,17 @@ class SourceSeparationDataset(BaseDataset):
                 (a single dataset element).
         """
         data_dict = self._index[ind]
-        mix_data = torchaudio.load(data_dict["mix"], backend="soundfile")
+        mix_data = torchaudio.load(data_dict["mix"], backend="soundfile")[0]
         instance_data = {"mix": mix_data}
 
         if self._part != "test":
-            instance_data["source_1"] = torchaudio.load(
-                data_dict["s1"], backend="soundfile"
-            )
-            instance_data["source_2"] = torchaudio.load(
-                data_dict["s2"], backend="soundfile"
-            )
+            source_1 = torchaudio.load(data_dict["s1"], backend="soundfile")
+            source_2 = torchaudio.load(data_dict["s2"], backend="soundfile")
+            instance_data["target"] = torch.stack((source_1[0], source_2[0]), dim=1)
+            assert source_1[1] == source_2[1]
 
         instance_data = self.preprocess_data(instance_data)
-
+        instance_data["mix"] = instance_data["mix"][0].unsqueeze(0)
         return instance_data
 
     def _get_or_load_index(self, part: str | Path) -> list[dict[str, tp.Any]]:

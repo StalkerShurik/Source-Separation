@@ -1,19 +1,14 @@
 import torch
+from torchmetrics.functional.audio.sdr import scale_invariant_signal_distortion_ratio
 
 from src.metrics.base_metric import BaseMetric
-from src.utils import sisnr_utls
+from src.utils.metric_utls import compute_metric
 
 
 class SiSNRI(BaseMetric):
     def __call__(
-        self,
-        mix: torch.Tensor,
-        source_1: torch.Tensor,
-        source_2: torch.Tensor,
-        predicted_source_1: torch.Tensor,
-        predicted_source_2: torch.Tensor,
-        **kwargs
-    ):
+        self, mix: torch.Tensor, target: torch.Tensor, predict: torch.Tensor, **kwargs
+    ) -> float:
         """
         Metric calculation logic.
 
@@ -23,17 +18,15 @@ class SiSNRI(BaseMetric):
         Returns:
             metric (float): calculated metric.
         """
-        baseline_metric = sisnr_utls.compute_pair_sisnr(
-            predicted_1=mix,
-            predicted_2=mix,
-            target_1=source_1,
-            target_2=source_2,
+        baseline_metric = compute_metric(
+            target=target,
+            predict=torch.stack([mix, mix], dim=1),
+            metric=scale_invariant_signal_distortion_ratio,
         )
-        model_metric = sisnr_utls.compute_pair_sisnr(
-            predicted_1=predicted_source_1,
-            predicted_2=predicted_source_2,
-            target_1=source_1,
-            target_2=source_2,
+        model_metric = compute_metric(
+            target=target,
+            predict=predict,
+            metric=scale_invariant_signal_distortion_ratio,
         )
 
         return (model_metric - baseline_metric).mean()
