@@ -1,5 +1,7 @@
+import typing as tp
+
 import torch
-from torchmetrics.functional.audio.sdr import scale_invariant_signal_distortion_ratio
+from torchmetrics.functional.audio.snr import scale_invariant_signal_noise_ratio
 
 from src.metrics.base_metric import BaseMetric
 from src.utils import metric_utls
@@ -9,11 +11,14 @@ class SiSNRI(BaseMetric):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.metric = metric_utls.create_permutation_metric(
-            scale_invariant_signal_distortion_ratio
+            scale_invariant_signal_noise_ratio
         )
 
     def __call__(
-        self, mix: torch.Tensor, target: torch.Tensor, predict: torch.Tensor, **kwargs
+        self,
+        mix: torch.Tensor,
+        predict: torch.Tensor,
+        target: torch.Tensor,
     ) -> torch.Tensor:
         """
         Metric calculation logic.
