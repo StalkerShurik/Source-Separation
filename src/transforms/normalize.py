@@ -2,6 +2,7 @@ from torch import nn
 
 
 class Normalize1D(nn.Module):
+
     """
     Batch-version of Normalize for 1D Input.
     Used as an example of a batch transform.

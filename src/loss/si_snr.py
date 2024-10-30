@@ -9,7 +9,9 @@ class SiSNRLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, target: torch.Tensor, predict: torch.Tensor, **kwargs):
+    def forward(
+        self, target: torch.Tensor, predict: torch.Tensor, **kwargs
+    ) -> dict[str, torch.Tensor]:
         """
         Calculates SI-SNR for predicted and ground truth signals
         (get maximum for all permutations)

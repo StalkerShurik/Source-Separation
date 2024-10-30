@@ -1,6 +1,8 @@
 import logging
 import random
-from typing import List
+import typing as tp
+from abc import abstractmethod
+from pathlib import Path
 
 import torch
 from torch.utils.data import Dataset
@@ -18,7 +20,11 @@ class BaseDataset(Dataset):
     """
 
     def __init__(
-        self, index, limit=None, shuffle_index=False, instance_transforms=None
+        self,
+        index: list[dict[str, tp.Any]],
+        limit: int | None = None,
+        shuffle_index: bool = False,
+        instance_transforms: dict[str, tp.Callable] | None = None,
     ):
         """
         Args:
@@ -34,11 +40,11 @@ class BaseDataset(Dataset):
                 tensor name.
         """
         index = self._shuffle_and_limit_index(index, limit, shuffle_index)
-        self._index: List[dict] = index
+        self._index: list[dict] = index
 
         self.instance_transforms = instance_transforms
 
-    def __getitem__(self, ind):
+    def __getitem__(self, ind: int):
         """
         Get element from the index, preprocess it, and combine it
         into a dict.
@@ -69,7 +75,7 @@ class BaseDataset(Dataset):
         """
         return len(self._index)
 
-    def load_object(self, path):
+    def load_object(self, path: str | Path):
         """
         Load object from disk.
 
@@ -81,7 +87,7 @@ class BaseDataset(Dataset):
         data_object = torch.load(path)
         return data_object
 
-    def preprocess_data(self, instance_data):
+    def preprocess_data(self, instance_data: dict[str, tp.Any]) -> dict[str, tp.Any]:
         """
         Preprocess data with instance transforms.
 
@@ -103,9 +109,10 @@ class BaseDataset(Dataset):
         return instance_data
 
     @staticmethod
+    @abstractmethod
     def _filter_records_from_dataset(
-        index: list,
-    ) -> list:
+        index: list[dict[str, tp.Any]],
+    ) -> list[dict[str, tp.Any]]:
         """
         Filter some of the elements from the dataset depending on
         some condition.
@@ -126,7 +133,7 @@ class BaseDataset(Dataset):
         pass
 
     @staticmethod
-    def _sort_index(index):
+    def _sort_index(index: list[dict[str, tp.Any]]):
         """
         Sort index via some rules.
 
@@ -145,7 +152,9 @@ class BaseDataset(Dataset):
         return sorted(index, key=lambda x: x["KEY_FOR_SORTING"])
 
     @staticmethod
-    def _shuffle_and_limit_index(index, limit, shuffle_index):
+    def _shuffle_and_limit_index(
+        index: list[dict[str, tp.Any]], limit: int | None, shuffle_index: bool
+    ):
         """
         Shuffle elements in index and limit the total number of elements.
 

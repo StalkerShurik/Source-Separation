@@ -7,7 +7,7 @@ ROOT_PATH = Path(__file__).absolute().resolve().parent.parent.parent
 DATA_PATH = ROOT_PATH / "data"
 
 
-def read_json(fname: str) -> list[OrderedDict] | OrderedDict:
+def read_json(fname: str | Path) -> list[OrderedDict] | OrderedDict:
     """
     Read the given json file.
 
@@ -21,7 +21,7 @@ def read_json(fname: str) -> list[OrderedDict] | OrderedDict:
         return json.load(handle, object_hook=OrderedDict)
 
 
-def write_json(content: tp.Any, fname: str):
+def write_json(content: tp.Any, fname: str | Path):
     """
     Write the content to the given json file.
 

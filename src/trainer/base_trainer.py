@@ -11,6 +11,7 @@ from src.utils.io_utils import ROOT_PATH
 
 
 class BaseTrainer:
+
     """
     Base class for all trainers.
     """

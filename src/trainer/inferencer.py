@@ -6,6 +6,7 @@ from src.trainer.base_trainer import BaseTrainer
 
 
 class Inferencer(BaseTrainer):
+
     """
     Inferencer (Like Trainer but for Inference) class
 
