@@ -19,6 +19,7 @@ class SiSNRI(BaseMetric):
         mix: torch.Tensor,
         predict: torch.Tensor,
         target: torch.Tensor,
+        **kwargs: tp.Any
     ) -> torch.Tensor:
         """
         Metric calculation logic.
