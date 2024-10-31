@@ -27,5 +27,5 @@ class PESQ(BaseMetric):
             metric (float): calculated metric.
         """
 
-        model_metric = self.metric(predict, target, self.fs, self.mode)
+        model_metric = self.metric(predict, target, fs=self.fs, mode=self.mode)
         return model_metric.mean()
