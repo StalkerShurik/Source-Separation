@@ -4,13 +4,13 @@ import torch
 from torchmetrics.functional.audio.sdr import signal_distortion_ratio
 
 from src.metrics.base_metric import BaseMetric
-from src.utils import metric_utls
+from src.utils.metric_utls import CustomePIT
 
 
 class SDRI(BaseMetric):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.metric = metric_utls.create_permutation_metric(signal_distortion_ratio)
+        self.metric = CustomePIT(signal_distortion_ratio)
 
     def __call__(
         self,

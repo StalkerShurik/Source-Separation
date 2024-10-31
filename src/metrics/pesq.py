@@ -4,15 +4,15 @@ import torch
 from torchmetrics.functional.audio.pesq import perceptual_evaluation_speech_quality
 
 from src.metrics.base_metric import BaseMetric
-from src.utils import metric_utls
+from src.utils.metric_utls import CustomePIT
 
 
 class PESQ(BaseMetric):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.metric = metric_utls.create_permutation_metric(
-            perceptual_evaluation_speech_quality
-        )
+        self.fs = 16000
+        self.mode = "wb"
+        self.metric = CustomePIT(perceptual_evaluation_speech_quality)
 
     def __call__(
         self, predict: torch.Tensor, target: torch.Tensor, **kwargs: tp.Any
@@ -27,5 +27,5 @@ class PESQ(BaseMetric):
             metric (float): calculated metric.
         """
 
-        model_metric = self.metric(predict, target, fs=16000, mode="wb")
+        model_metric = self.metric(predict, target, self.fs, self.mode)
         return model_metric.mean()

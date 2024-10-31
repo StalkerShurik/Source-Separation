@@ -4,15 +4,13 @@ import torch
 from torchmetrics.functional.audio.snr import scale_invariant_signal_noise_ratio
 
 from src.metrics.base_metric import BaseMetric
-from src.utils import metric_utls
+from src.utils.metric_utls import CustomePIT
 
 
 class SiSNRI(BaseMetric):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.metric = metric_utls.create_permutation_metric(
-            scale_invariant_signal_noise_ratio
-        )
+        self.metric = CustomePIT(scale_invariant_signal_noise_ratio)
 
     def __call__(
         self,

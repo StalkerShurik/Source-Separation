@@ -1,9 +1,6 @@
 import typing as tp
 
 import torch
-import torchmetrics
-import torchmetrics.metric
-from torchmetrics.audio import PermutationInvariantTraining
 
 
 class CustomePIT(torch.nn.Module):  # assume we have only 2 sources
@@ -26,7 +23,3 @@ class CustomePIT(torch.nn.Module):  # assume we have only 2 sources
         )
 
         return torch.max(metric_perm1, metric_perm2)
-
-
-def create_permutation_metric(metric: tp.Callable) -> torch.nn.Module:
-    return CustomePIT(metric_func=metric)

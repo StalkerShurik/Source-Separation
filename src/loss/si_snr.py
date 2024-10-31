@@ -2,15 +2,13 @@ import torch
 from torch import nn
 from torchmetrics.functional.audio.snr import scale_invariant_signal_noise_ratio
 
-from src.utils import metric_utls
+from src.utils.metric_utls import CustomePIT
 
 
 class SiSNRLoss(nn.Module):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.metric = metric_utls.create_permutation_metric(
-            metric=scale_invariant_signal_noise_ratio
-        )
+        self.metric = CustomePIT(scale_invariant_signal_noise_ratio)
 
     def forward(
         self, predict: torch.Tensor, target: torch.Tensor, **kwargs
