@@ -1,23 +1,21 @@
 import typing as tp
 
 import torch
-from torchmetrics.functional.audio.snr import scale_invariant_signal_noise_ratio
+from torchmetrics.functional.audio.pesq import perceptual_evaluation_speech_quality
 
 from src.metrics.base_metric import BaseMetric
 from src.utils.metric_utls import CustomePIT
 
 
-class SiSNRI(BaseMetric):
+class PESQ(BaseMetric):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.metric = CustomePIT(scale_invariant_signal_noise_ratio)
+        self.fs = 16000
+        self.mode = "wb"
+        self.metric = CustomePIT(perceptual_evaluation_speech_quality)
 
     def __call__(
-        self,
-        mix: torch.Tensor,
-        predict: torch.Tensor,
-        target: torch.Tensor,
-        **kwargs: tp.Any
+        self, predict: torch.Tensor, target: torch.Tensor, **kwargs: tp.Any
     ) -> torch.Tensor:
         """
         Metric calculation logic.
@@ -29,7 +27,5 @@ class SiSNRI(BaseMetric):
             metric (float): calculated metric.
         """
 
-        baseline_metric = self.metric(torch.stack([mix, mix], dim=1), target)
-        model_metric = self.metric(predict, target)
-
-        return (model_metric - baseline_metric).mean()
+        model_metric = self.metric(predict, target, self.fs, self.mode)
+        return model_metric.mean()

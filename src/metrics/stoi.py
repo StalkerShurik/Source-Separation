@@ -1,23 +1,20 @@
 import typing as tp
 
 import torch
-from torchmetrics.functional.audio.snr import scale_invariant_signal_noise_ratio
+from torchmetrics.functional.audio.stoi import short_time_objective_intelligibility
 
 from src.metrics.base_metric import BaseMetric
 from src.utils.metric_utls import CustomePIT
 
 
-class SiSNRI(BaseMetric):
+class STOI(BaseMetric):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.metric = CustomePIT(scale_invariant_signal_noise_ratio)
+        self.fs = 16000
+        self.metric = CustomePIT(short_time_objective_intelligibility)
 
     def __call__(
-        self,
-        mix: torch.Tensor,
-        predict: torch.Tensor,
-        target: torch.Tensor,
-        **kwargs: tp.Any
+        self, predict: torch.Tensor, target: torch.Tensor, **kwargs: tp.Any
     ) -> torch.Tensor:
         """
         Metric calculation logic.
@@ -29,7 +26,6 @@ class SiSNRI(BaseMetric):
             metric (float): calculated metric.
         """
 
-        baseline_metric = self.metric(torch.stack([mix, mix], dim=1), target)
-        model_metric = self.metric(predict, target)
+        model_metric = self.metric(predict, target, fs=self.fs)
 
-        return (model_metric - baseline_metric).mean()
+        return model_metric.mean()

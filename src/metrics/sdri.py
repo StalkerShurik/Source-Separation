@@ -1,16 +1,16 @@
 import typing as tp
 
 import torch
-from torchmetrics.functional.audio.snr import scale_invariant_signal_noise_ratio
+from torchmetrics.functional.audio.sdr import signal_distortion_ratio
 
 from src.metrics.base_metric import BaseMetric
 from src.utils.metric_utls import CustomePIT
 
 
-class SiSNRI(BaseMetric):
+class SDRI(BaseMetric):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.metric = CustomePIT(scale_invariant_signal_noise_ratio)
+        self.metric = CustomePIT(signal_distortion_ratio)
 
     def __call__(
         self,
