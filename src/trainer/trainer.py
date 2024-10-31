@@ -1,5 +1,8 @@
+import torch
+import typing as tp
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
+import matplotlib.pyplot as plt
 
 
 class Trainer(BaseTrainer):
@@ -71,9 +74,27 @@ class Trainer(BaseTrainer):
         # such as audio, text or images, for example
 
         # logging scheme might be different for different partitions
-        if mode == "train":  # the method is called only every self.log_step steps
-            # Log Stuff
-            pass
-        else:
-            # Log Stuff
-            pass
+
+        self.log_audio(
+            self.get_send_to_log(batch, *getattr(self.config.writer, f"log_audio_{mode}"))
+        )
+
+        self.log_wave(
+            self.get_send_to_log(batch, *getattr(self.config.writer, f"log_wave_{mode}"))
+        )
+    
+    def get_send_to_log(self, batch, *args):
+        return {key: batch[key][0] for key in args}
+
+    def log_audio(self, data: dict):
+        for key, value in data.items():
+            for index, audio in enumerate(value):
+                self.writer.add_audio(f"{key}_{index + 1}", audio, 16000)
+
+    def log_wave(self, data: dict):
+        for key, value in data.items():
+            for index, audio in enumerate(value):
+                fig, ax = plt.subplots(figsize=(15, 8))
+                ax.set_title(f"{key}_{index + 1}")
+                ax.plot(audio.detach().cpu())
+                self.writer.add_image(f"{key}_{index + 1}", fig)
