@@ -1,7 +1,7 @@
 defaults:
   - model: tasnet
   - writer: wandb
-  - metrics: si_snri
+  - metrics: base_metrics
   - datasets: example
   - dataloader: example
   - transforms: example

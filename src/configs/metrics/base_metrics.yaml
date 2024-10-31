@@ -2,7 +2,16 @@ device: "auto"
 train: # metrics that are calculated during training
   - _target_: src.metrics.SiSNRI
     device: ${metrics.device}
-    name: "TRAIN_SiSNRI" # just an example to see difference
+    name: "TRAIN_SiSNRI"
+  - _target_: src.metrics.PESQ
+    device: ${metrics.device}
+    name: "TRAIN_PESQ"
+  - _target_: src.metrics.STOI
+    device: ${metrics.device}
+    name: "TRAIN_STOI"
+  - _target_: src.metrics.SDRI
+    device: ${metrics.device}
+    name: "TRAIN_SDRI"
 inference: # metrics that are calculated during inference (eval)
   - _target_: src.metrics.SiSNRI
     device: ${metrics.device}
