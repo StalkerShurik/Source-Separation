@@ -2,6 +2,7 @@ import json
 import typing as tp
 from pathlib import Path
 
+import numpy as np
 import torch
 import torchaudio
 
@@ -50,6 +51,17 @@ class SourceSeparationDataset(BaseDataset):
         data_dict = self._index[ind]
         mix_data = torchaudio.load(data_dict["mix"], backend="soundfile")[0]
         instance_data = {"mix": mix_data}
+
+        if self._video:
+            npz_1 = np.load(data_dict["mouth1"])
+            npz_2 = np.load(data_dict["mouth2"])
+
+            instance_data.update(
+                {
+                    "video1": torch.tensor(npz_1["data"]).unsqueeze(0),
+                    "video2": torch.tensor(npz_2["data"]).unsqueeze(0),
+                }
+            )
 
         if self._part != "test":
             source_1 = torchaudio.load(data_dict["s1"], backend="soundfile")
