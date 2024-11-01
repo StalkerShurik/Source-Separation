@@ -15,7 +15,6 @@ class SourceSeparationDataset(BaseDataset):
         self,
         part: str,
         dataset_dir: str | Path = "dla_dataset",
-        video=False,
         *args,
         **kwargs,
     ) -> None:
@@ -25,7 +24,6 @@ class SourceSeparationDataset(BaseDataset):
             dataset_dir (Path | str): path to dataset
         """
         self._data_dir = DATA_PATH / dataset_dir
-        self._video = video
         index = self._get_or_load_index(part)
         if part not in ("train", "val", "test"):
             raise ValueError(f"Invalid part {part}")
@@ -52,16 +50,15 @@ class SourceSeparationDataset(BaseDataset):
         mix_data = torchaudio.load(data_dict["mix"], backend="soundfile")[0]
         instance_data = {"mix": mix_data}
 
-        if self._video:
-            npz_1 = np.load(data_dict["mouth1"])
-            npz_2 = np.load(data_dict["mouth2"])
+        npz_1 = np.load(data_dict["mouth1"])
+        npz_2 = np.load(data_dict["mouth2"])
 
-            instance_data.update(
-                {
-                    "video1": torch.tensor(npz_1["data"]).unsqueeze(0),
-                    "video2": torch.tensor(npz_2["data"]).unsqueeze(0),
-                }
-            )
+        instance_data.update(
+            {
+                "video1": torch.tensor(npz_1["data"]).unsqueeze(0),
+                "video2": torch.tensor(npz_2["data"]).unsqueeze(0),
+            }
+        )
 
         if self._part != "test":
             source_1 = torchaudio.load(data_dict["s1"], backend="soundfile")
@@ -113,24 +110,23 @@ class SourceSeparationDataset(BaseDataset):
                 "mix": str(path),
             }
 
-            if self._video:
-                f1, f2 = path.name.split("_")  # get id of speakers
-                f2 = f2[:-4]  # remove .wav
+            f1, f2 = path.name.split("_")  # get id of speakers
+            f2 = f2[:-4]  # remove .wav
 
-                f1 += ".npz"
-                f2 += ".npz"
+            f1 += ".npz"
+            f2 += ".npz"
 
-                mouth_path_1 = path.parent.parent.parent.parent / "mouths" / f1
-                mouth_path_2 = path.parent.parent.parent.parent / "mouths" / f2
-                assert mouth_path_1.exists()
-                assert mouth_path_2.exists()
+            mouth_path_1 = path.parent.parent.parent.parent / "mouths" / f1
+            mouth_path_2 = path.parent.parent.parent.parent / "mouths" / f2
+            assert mouth_path_1.exists()
+            assert mouth_path_2.exists()
 
-                row.update(
-                    {
-                        "mouth1": str(mouth_path_1),
-                        "mouth2": str(mouth_path_1),
-                    }
-                )
+            row.update(
+                {
+                    "mouth1": str(mouth_path_1),
+                    "mouth2": str(mouth_path_1),
+                }
+            )
 
             if part != "test":
                 s1_path = split_dir / "s1" / path.name
