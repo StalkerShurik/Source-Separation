@@ -2,6 +2,7 @@ import json
 import typing as tp
 from pathlib import Path
 
+import numpy as np
 import torch
 import torchaudio
 
@@ -11,7 +12,11 @@ from src.utils.io_utils import DATA_PATH
 
 class SourceSeparationDataset(BaseDataset):
     def __init__(
-        self, part: str, dataset_dir: str | Path = "dla_dataset", *args, **kwargs
+        self,
+        part: str,
+        dataset_dir: str | Path = "dla_dataset",
+        *args,
+        **kwargs,
     ) -> None:
         """
         Args:
@@ -19,7 +24,6 @@ class SourceSeparationDataset(BaseDataset):
             dataset_dir (Path | str): path to dataset
         """
         self._data_dir = DATA_PATH / dataset_dir
-
         index = self._get_or_load_index(part)
         if part not in ("train", "val", "test"):
             raise ValueError(f"Invalid part {part}")
@@ -45,6 +49,16 @@ class SourceSeparationDataset(BaseDataset):
         data_dict = self._index[ind]
         mix_data = torchaudio.load(data_dict["mix"], backend="soundfile")[0]
         instance_data = {"mix": mix_data}
+
+        npz_1 = np.load(data_dict["mouth1"])
+        npz_2 = np.load(data_dict["mouth2"])
+
+        instance_data.update(
+            {
+                "video1": torch.tensor(npz_1["data"]).unsqueeze(0),
+                "video2": torch.tensor(npz_2["data"]).unsqueeze(0),
+            }
+        )
 
         if self._part != "test":
             source_1 = torchaudio.load(data_dict["s1"], backend="soundfile")
@@ -95,6 +109,25 @@ class SourceSeparationDataset(BaseDataset):
             row = {
                 "mix": str(path),
             }
+
+            f1, f2 = path.name.split("_")  # get id of speakers
+            f2 = f2[:-4]  # remove .wav
+
+            f1 += ".npz"
+            f2 += ".npz"
+
+            mouth_path_1 = path.parent.parent.parent.parent / "mouths" / f1
+            mouth_path_2 = path.parent.parent.parent.parent / "mouths" / f2
+            assert mouth_path_1.exists()
+            assert mouth_path_2.exists()
+
+            row.update(
+                {
+                    "mouth1": str(mouth_path_1),
+                    "mouth2": str(mouth_path_1),
+                }
+            )
+
             if part != "test":
                 s1_path = split_dir / "s1" / path.name
                 s2_path = split_dir / "s2" / path.name
