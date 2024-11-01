@@ -89,7 +89,7 @@ class Trainer(BaseTrainer):
     def log_audio(self, data: dict):
         for key, value in data.items():
             for index, audio in enumerate(value):
-                self.writer.add_audio(f"{key}_{index + 1}", audio, 16000)
+                self.writer.add_audio(f"{key}_{index + 1}", audio.detach().cpu(), 16000)
 
     def log_wave(self, data: dict):
         for key, value in data.items():
