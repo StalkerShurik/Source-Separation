@@ -4,5 +4,9 @@ workspace: null
 run_name: "testing"
 mode: "online"
 loss_names: ["loss"] # which losses to log (useful for multi-loss tasks, s.a. GANs)
+log_wave_train: ["predict", "target"]
+log_wave_val: ["predict", "target"]
+log_audio_train: ["predict", "target"]
+log_audio_val: ["predict", "target"]
 log_checkpoints: False # set to True if you want to log save_dir with checkpoints to W&B
 id_length: 32 # length of the run_id
