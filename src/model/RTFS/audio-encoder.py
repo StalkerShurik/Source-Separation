@@ -1,3 +1,5 @@
+from typing import Union
+
 import torch
 import torch.nn as nn
 
@@ -5,46 +7,69 @@ import torch.nn as nn
 class ConvEncoder(nn.Module):
     def __init__(
         self,
-        in_channels: int,
-        out_channels: int,
-        kernel_size: int,
+        input_channels: int,
+        output_channels: int,
+        kernel_size: tuple,
         activation_type: str,
         norm_type: str,
         stride: int = 1,
-        padding: int = 0,
+        padding: Union[str, int] = "same",
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
 
-        self.in_channels: int = in_channels
-        self.out_channels: int = out_channels
-        self.kernel_size: int = kernel_size
+        self.input_channels: int = input_channels
+        self.output_channels: int = output_channels
+        self.kernel_size: tuple = kernel_size
         self.stride: int = stride
-        self.padding: int = padding
+        self.padding: Union[str, int] = padding
 
         self.encoder = nn.Conv2d(
-            in_channels, out_channels, kernel_size, stride, padding
+            input_channels, output_channels, kernel_size, stride, padding
         )
-        self.activation = getattr(nn, activation_type)
-        self.norm = getattr(nn, norm_type)
+        self.activation = getattr(nn, activation_type)()
+        # self.norm = getattr(nn, norm_type)()
 
     def forward(self, x):
         x = self.encoder(x)
-        x = self.activation(x)
-        x = self.norm(x)
+        # is act and norm required???
+        # x = self.activation(x)
+        # x = self.norm(x)
         return x
 
 
 class RTFS_AudioEncoder(nn.Module):
-    def __init__(self, n_fft: int, hop_length: int, win_length: int, *args, **kwargs):
+    def __init__(
+        self,
+        n_fft: int,
+        hop_length: int = 128,
+        win_length: int = 256,
+        output_channels: int = 256,
+        kernel_size: tuple = (3, 3),
+        activation_type="ReLU",
+        norm_type="LayerNorm",
+        *args,
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.n_fft: int = n_fft
         self.hop_length: int = hop_length
         self.win_length: int = win_length
+        self.output_channels: int = output_channels
+        self.kernel_size: tuple = kernel_size
 
-        self.conv_enocder: nn.Module = None
+        self.activation_type = activation_type
+        self.norm_type = norm_type
+
+        self.conv_enocder: nn.Module = ConvEncoder(
+            input_channels=2,
+            output_channels=self.output_channels,
+            kernel_size=self.kernel_size,
+            activation_type=self.activation_type,
+            norm_type=self.norm_type,
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -58,7 +83,5 @@ class RTFS_AudioEncoder(nn.Module):
             win_length=self.win_length,
             return_complex=True,
         )
-        # cringe should be fixed
-        x_spectr = torch.stack((x_spectr.real, x_spectr.imag), 1)
-        print(x_spectr.shape)
+        x_spectr = torch.stack((x_spectr.real, x_spectr.imag), 1).transpose(2, 3)
         return self.conv_enocder(x_spectr)
