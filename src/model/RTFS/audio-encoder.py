@@ -32,6 +32,10 @@ class ConvEncoder(nn.Module):
         # self.norm = getattr(nn, norm_type)()
 
     def forward(self, x):
+        """
+        input:  B x 2 x T x F
+        output: B x C x T x F
+        """
         x = self.encoder(x)
         # is act and norm required???
         # x = self.activation(x)
@@ -73,7 +77,8 @@ class RTFS_AudioEncoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Input: tensor with audio seqs: Batch x Seq
+        Input: tensor with audio seqs: B x L
+        Output: B x C x T x F
         """
 
         x_spectr = torch.stft(
@@ -83,5 +88,7 @@ class RTFS_AudioEncoder(nn.Module):
             win_length=self.win_length,
             return_complex=True,
         )
-        x_spectr = torch.stack((x_spectr.real, x_spectr.imag), 1).transpose(2, 3)
+        x_spectr = torch.stack((x_spectr.real, x_spectr.imag), 1).transpose(
+            2, 3
+        )  # B x 2 x F x T -> B x 2 x T x F
         return self.conv_enocder(x_spectr)
