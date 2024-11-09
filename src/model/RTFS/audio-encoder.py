@@ -20,18 +20,13 @@ class RTFS_AudioEncoder(nn.Module):
         self.n_fft: int = n_fft
         self.hop_length: int = hop_length
         self.win_length: int = win_length
-        self.output_channels: int = output_channels  # C
-        self.kernel_size: tuple = kernel_size
 
-        self.activation_type: nn.Module = activation_type
-        self.norm_type: nn.Module = norm_type
-
-        self.conv_enocder: nn.Module = nn.Sequential(
+        self.layers: nn.Module = nn.Sequential(
             nn.Conv2d(
-                2, self.output_channels, self.kernel_size, stride=1, padding="same"
+                2, output_channels, kernel_size, stride=1, padding="same", bias=False
             ),
-            self.activation_type(inplace=True),
-            self.norm_type(self.output_channels),
+            norm_type(output_channels),
+            activation_type(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -50,4 +45,4 @@ class RTFS_AudioEncoder(nn.Module):
         x_spectr = torch.stack((x_spectr.real, x_spectr.imag), 1).transpose(
             2, 3
         )  # B x 2 x F x T -> B x 2 x T x F
-        return self.conv_enocder(x_spectr)  # B x 2 x T x F -> B x C x T x F
+        return self.layers(x_spectr)  # B x 2 x T x F -> B x C x T x F
