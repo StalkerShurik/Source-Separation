@@ -51,7 +51,3 @@ class RTFS_AudioEncoder(nn.Module):
             2, 3
         )  # B x 2 x F x T -> B x 2 x T x F
         return self.conv_enocder(x_spectr)  # B x 2 x T x F -> B x C x T x F
-
-
-enc = RTFS_AudioEncoder(256)
-print(enc(torch.rand(8, 32000)).shape)
