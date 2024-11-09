@@ -10,8 +10,8 @@ class RTFS_AudioEncoder(nn.Module):
         win_length: int = 256,
         output_channels: int = 256,
         kernel_size: tuple = (3, 3),
-        activation_type=nn.ReLU,
-        norm_type=nn.BatchNorm2d,
+        activation_type: nn.Module = nn.ReLU,
+        norm_type: nn.Module = nn.BatchNorm2d,
         *args,
         **kwargs
     ):
