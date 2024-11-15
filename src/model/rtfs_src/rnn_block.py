@@ -104,11 +104,9 @@ def test_shape():
 
     layer = DualPathRNN(channels, 23, apply_to_audio=True)
 
-    out_bad = layer.forward_bad(input)
-
     out = layer(input)
 
-    print(torch.linalg.norm(out_bad - out) / torch.linalg.norm(out_bad))
+    print(out.shape)
 
 
 test_shape()
