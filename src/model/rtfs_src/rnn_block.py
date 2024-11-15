@@ -54,11 +54,61 @@ class DualPathRNN(nn.Module):
             stride=self.stride,
         )
 
-    def _get_shape_after_conv(self, size_: int) -> int:
-        return (
-            np.ceil((size_ - self.kernel_size) / self.stride) * self.stride
-            + self.kernel_size
-        )
+    # def _get_shape_after_conv(self, size_: int) -> int:
+    #     return int(
+    #         np.ceil((size_ - self.kernel_size) / self.stride) * self.stride
+    #         + self.kernel_size
+    #     )
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        pass  # todo
+        features_residual = features
+
+        print(f"input shape {features.shape}")
+
+        batch_size, channels, time, features_size = features.shape
+
+        features = features.permute(0, 2, 1, 3).reshape(
+            batch_size * time, channels, features_size, 1
+        )
+
+        features = self.unfold(features)
+
+        print(f"unfolded shape {features.shape}")
+
+        features = self.sru(features.permute(0, 2, 1))[0]
+
+        print(f"sru shape {features.shape}")
+
+        features = self.linear(features.permute(0, 2, 1))
+
+        print(f"convT shape {features.shape}")
+
+        features = features.reshape(batch_size, time, channels, features_size).permute(
+            0, 2, 1, 3
+        )
+
+        features += features_residual
+
+        print(f"final shape {features.shape}")
+
+        return features
+
+
+def test_shape():
+    batch_size = 7
+    channels = 11
+    time = 17
+    features = 19
+
+    input = torch.rand(batch_size, channels, time, features)
+
+    layer = DualPathRNN(channels, 23, apply_to_audio=True)
+
+    out_bad = layer.forward_bad(input)
+
+    out = layer(input)
+
+    print(torch.linalg.norm(out_bad - out) / torch.linalg.norm(out_bad))
+
+
+test_shape()
