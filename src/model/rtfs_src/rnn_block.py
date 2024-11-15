@@ -14,7 +14,7 @@ class DualPathRNN(nn.Module):
         stride: int = 1,
         num_layers: int = 1,
         bidirectional: bool = True,
-        apply_to_audio: bool = False,
+        apply_to_time: bool = False,
         *args,
         **kwargs,
     ) -> None:
@@ -28,7 +28,7 @@ class DualPathRNN(nn.Module):
         # sru params
         self.num_layers = num_layers
         self.bidirectional = bidirectional
-        self.apply_to_audio = apply_to_audio
+        self.apply_to_time = apply_to_time
 
         self.unfolded_channels = self.in_channels * self.kernel_size
         self.rnn_out_channels = (
@@ -61,6 +61,9 @@ class DualPathRNN(nn.Module):
     #     )
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
+        if self.apply_to_time:
+            features = features.permute(0, 1, 3, 2)
+
         features_residual = features
 
         print(f"input shape {features.shape}")
@@ -90,6 +93,9 @@ class DualPathRNN(nn.Module):
         features += features_residual
 
         print(f"final shape {features.shape}")
+
+        if self.apply_to_time:
+            features = features.permute(0, 1, 3, 2)
 
         return features
 
