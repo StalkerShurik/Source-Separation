@@ -58,6 +58,7 @@ class CAF(nn.Module):
         audio_gate = self.P2(audio_features)  # B x Ca x Ta x F
 
         video_attn = self.F1(video_features)
+
         video_attn = video_attn.reshape(B, Ca, self.nheads, -1).mean(dim=2)
         video_attn = torch.softmax(video_attn, -1)
         video_attn = torch.nn.functional.interpolate(video_attn, size=Ta)
@@ -65,7 +66,10 @@ class CAF(nn.Module):
         video_key = self.F2(video_features)
         video_key = torch.nn.functional.interpolate(video_key, size=Ta)
 
-        return video_key * audio_gate + video_attn * audio_value
+        return (
+            video_key.unsqueeze(-1) * audio_gate
+            + video_attn.unsqueeze(-1) * audio_value
+        )
 
 
 class SeparationNetwork(nn.Module):
