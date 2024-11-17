@@ -104,8 +104,6 @@ class SeparationNetwork(nn.Module):
 
         audio_features = self.audio_network(audio_features)
 
-        print(f"AP result shape {audio_features.shape}")
-
         video_features = self.video_network(video_features)
 
         audio_features = self.CAE(
