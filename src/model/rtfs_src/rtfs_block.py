@@ -2,20 +2,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .attention_block import Attn
 from .conv_blocks import ConvBlockWithActivation
 from .reconstruction_block import ReconstructionBlock
+from .rnn_block import DualPathRNN
 
 
 class RTFSBlock(nn.Module):
     def __init__(
         self,
-        attention_layers: nn.Module,
         in_channels: int,
-        hid_channels: int,
+        hid_channels: int = 64,
         kernel_size: int = 5,
         stride: int = 2,
-        upsampling_depth: int = 4,
-        is_conv_2d: bool = False,
+        upsampling_depth: int = 2,
+        is_conv_2d: bool = True,
+        is2d: bool = True,
+        rnn_hidden=32,
     ) -> None:
         super(RTFSBlock, self).__init__()
         self.in_channels = in_channels
@@ -24,10 +27,11 @@ class RTFSBlock(nn.Module):
         self.stride = stride
         self.upsampling_depth = upsampling_depth
         self.is_conv_2d = is_conv_2d
+        self.is2d = is2d
 
-        self.is_conv_2d = is_conv_2d
         self.normalization_class = nn.BatchNorm2d if is_conv_2d else nn.BatchNorm1d
         self.pool = F.adaptive_avg_pool2d if self.is2d else F.adaptive_avg_pool1d
+        self.conv_class = nn.Conv2d if self.is2d else nn.Conv1d
 
         self.gateway = ConvBlockWithActivation(
             in_channels=self.in_channels,
@@ -58,7 +62,19 @@ class RTFSBlock(nn.Module):
             ]
         )
 
-        self.attention_layers = attention_layers
+        self.layers = nn.Sequential(
+            DualPathRNN(
+                in_channels=self.hid_channels,
+                hidden_channels=rnn_hidden,
+                apply_to_time=False,
+            ),
+            DualPathRNN(
+                in_channels=self.hid_channels,
+                hidden_channels=rnn_hidden,
+                apply_to_time=True,
+            ),
+            Attn(in_channels=self.hid_channels, hidden_channels=self.hid_channels),
+        )
 
         self.fusion_layers = nn.ModuleList(
             [
@@ -92,9 +108,10 @@ class RTFSBlock(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: B, C, T, (F)
+        print(f"RTFS INPUT shape {x.shape}")
         residual = self.gateway(x)
         projected_x = self.projection(residual)
-
+        print(f"projected shape {projected_x.shape}")
         # bottom-up
         local_features = [self.downsample_layers[0](projected_x)]
         for i in range(1, self.upsampling_depth):
@@ -109,9 +126,9 @@ class RTFSBlock(nn.Module):
             )
             for features in local_features
         )
-
+        print(f"downsamples shape {global_features.shape}")
         # global attention module
-        global_features = self.attention(global_features)  # B, N, T, (F)
+        global_features = self.layers(global_features)  # B, N, T, (F)
 
         # add info from global attention
         united_features = [

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from conv_blocks import ConvBlockWithActivation
+
+from .conv_blocks import ConvBlockWithActivation
 
 
 class Attn(nn.Module):
@@ -10,7 +11,12 @@ class Attn(nn.Module):
     """
 
     def __init__(
-        self, in_channels: int, hidden_channels: int, n_heads: int, *args, **kwargs  # E
+        self,
+        in_channels: int,
+        hidden_channels: int,
+        n_heads: int = 4,
+        *args,
+        **kwargs,  # E
     ):
         super().__init__(*args, **kwargs)
 
@@ -57,6 +63,8 @@ class Attn(nn.Module):
         output shape: B x C x T x F
         """
 
+        print(f"attn input shape {input.shape}")
+
         input_residual = input
 
         Q = [q_head(input).unsqueeze(0) for q_head in self.q_heads]
@@ -95,22 +103,6 @@ class Attn(nn.Module):
 
         V = V + input_residual
 
+        print(f"attn output shape {V.shape}")
+
         return V
-
-
-def test_shape():
-    batch_size = 7
-    channels = 64
-    time = 17
-    features = 19
-
-    input = torch.rand(batch_size, channels, time, features)
-
-    layer = Attn(in_channels=channels, hidden_channels=13, n_heads=16)
-
-    out = layer(input)
-
-    print(out.shape)
-
-
-test_shape()

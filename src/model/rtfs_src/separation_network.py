@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from conv_blocks import ConvBlockWithActivation
-from rtfs_block import RTFSBlock
+
+from .conv_blocks import ConvBlockWithActivation
+from .rtfs_block import RTFSBlock
 
 
 class CAF(nn.Module):
@@ -70,14 +71,17 @@ class CAF(nn.Module):
 class SeparationNetwork(nn.Module):
     def __init__(
         self,
-        audio_network: RTFSBlock,
-        video_network: RTFSBlock,
         audio_channels: int,
         video_channels: int,
+        audio_network: nn.Module = RTFSBlock,
+        video_network: nn.Module = RTFSBlock,
+        AP_hid_channels=64,
         audio_repeats: int = 4,
     ) -> None:
         super(SeparationNetwork, self).__init__()
-        self.audio_network = audio_network
+        self.audio_network = audio_network(
+            in_channels=audio_channels, hid_channels=AP_hid_channels, is_conv_2d=True
+        )
         self.video_network = video_network
 
         self.audio_bn_chan = audio_channels
@@ -95,6 +99,9 @@ class SeparationNetwork(nn.Module):
         audio_features_residual = audio_features
 
         audio_features = self.audio_network(audio_features)
+
+        print(f"AP result shape {audio_features.shape}")
+
         video_features = self.video_network(video_features)
 
         audio_features = self.CAE(

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from conv_blocks import ConvBlockWithActivation
+
+from .conv_blocks import ConvBlockWithActivation
 
 
 class SpectralSourceSeparationDecoder(nn.Module):

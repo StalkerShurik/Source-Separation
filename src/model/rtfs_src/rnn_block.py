@@ -15,6 +15,7 @@ class DualPathRNN(nn.Module):
         num_layers: int = 1,
         bidirectional: bool = True,
         apply_to_time: bool = False,
+        apply_to_video=False,
         *args,
         **kwargs,
     ) -> None:
@@ -66,7 +67,7 @@ class DualPathRNN(nn.Module):
 
         features_residual = features
 
-        print(f"input shape {features.shape}")
+        print(f"RNN input shape {features.shape}")
 
         batch_size, channels, time, features_size = features.shape
 
@@ -98,21 +99,3 @@ class DualPathRNN(nn.Module):
             features = features.permute(0, 1, 3, 2)
 
         return features
-
-
-def test_shape():
-    batch_size = 7
-    channels = 11
-    time = 17
-    features = 19
-
-    input = torch.rand(batch_size, channels, time, features)
-
-    layer = DualPathRNN(channels, 23, apply_to_audio=True)
-
-    out = layer(input)
-
-    print(out.shape)
-
-
-test_shape()
