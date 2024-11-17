@@ -24,8 +24,6 @@ class RTFSModel(torch.nn.Module):
         )  # TODO add delete hardcode
         self.s3_decoder_block = s3_decoder_block
 
-        # self.init_modules()  # TODO
-
     def forward(
         self, raw_audio: torch.Tensor, video_features: torch.Tensor = None  # B, N, T, F
     ) -> torch.Tensor:
