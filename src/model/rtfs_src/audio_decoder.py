@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-
-from .conv_blocks import ConvBlockWithActivation
+from conv_blocks import ConvBlockWithActivation
 
 
 class SpectralSourceSeparationDecoder(nn.Module):
@@ -11,12 +10,16 @@ class SpectralSourceSeparationDecoder(nn.Module):
         self,
         input_channels: int,
         hop_length: int = 128,
-        win_length: int = 256,
-        output_channels: int = 256,
+        features: int = 256,
+        length=32000,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
+
+        self.length = length
+
+        self.preact = nn.PReLU()
 
         self.M: nn.Module = ConvBlockWithActivation(
             in_channels=input_channels,
@@ -29,17 +32,17 @@ class SpectralSourceSeparationDecoder(nn.Module):
         self.map_to_stft: nn.Module = ConvBlockWithActivation(
             in_channels=input_channels,
             out_channels=2,
-            kernel_size=1,
+            kernel_size=3,
+            padding="same",
             is_conv_2d=True,
             activation_function=nn.Identity,
         )
 
+        self.features = features
         self.hop_length = hop_length
-        self.win_length = win_length
-        self.output_channels = output_channels
 
     def forward(self, processed_audio: torch.Tensor, original_audio: torch.Tensor):
-        processed_audio = nn.PReLU(processed_audio)
+        processed_audio = self.preact(processed_audio)
         processed_audio = self.M(processed_audio)
 
         processed_real = processed_audio[:, : self.input_channels // 2]
@@ -55,12 +58,15 @@ class SpectralSourceSeparationDecoder(nn.Module):
 
         decoded = self.map_to_stft(decoded)
 
+        decoded_complex = torch.complex(decoded[:, 0], decoded[:, 1]).transpose(-1, -2)
+
         decoded_vaw = torch.istft(
-            decoded,
-            n_fft=self.output_channels,
+            decoded_complex,
+            n_fft=self.features,
             hop_length=self.hop_length,
-            win_length=self.win_length,
+            win_length=self.features,
+            window=torch.hann_window(window_length=self.features),
+            length=self.length,
         )
-        # TODO nasrano
 
         return decoded_vaw
