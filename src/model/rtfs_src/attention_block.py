@@ -63,8 +63,6 @@ class Attn(nn.Module):
         output shape: B x C x T x F
         """
 
-        print(f"attn input shape {input.shape}")
-
         input_residual = input
 
         Q = [q_head(input).unsqueeze(0) for q_head in self.q_heads]
@@ -102,7 +100,5 @@ class Attn(nn.Module):
         V = self.FFN(V)
 
         V = V + input_residual
-
-        print(f"attn output shape {V.shape}")
 
         return V

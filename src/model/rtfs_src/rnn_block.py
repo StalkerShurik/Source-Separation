@@ -67,8 +67,6 @@ class DualPathRNN(nn.Module):
 
         features_residual = features
 
-        print(f"RNN input shape {features.shape}")
-
         batch_size, channels, time, features_size = features.shape
 
         features = features.permute(0, 2, 1, 3).reshape(
@@ -77,23 +75,15 @@ class DualPathRNN(nn.Module):
 
         features = self.unfold(features)
 
-        print(f"unfolded shape {features.shape}")
-
         features = self.sru(features.permute(0, 2, 1))[0]
 
-        print(f"sru shape {features.shape}")
-
         features = self.linear(features.permute(0, 2, 1))
-
-        print(f"convT shape {features.shape}")
 
         features = features.reshape(batch_size, time, channels, features_size).permute(
             0, 2, 1, 3
         )
 
         features += features_residual
-
-        print(f"final shape {features.shape}")
 
         if self.apply_to_time:
             features = features.permute(0, 1, 3, 2)
