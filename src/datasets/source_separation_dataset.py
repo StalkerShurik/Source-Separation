@@ -50,13 +50,17 @@ class SourceSeparationDataset(BaseDataset):
         mix_data = torchaudio.load(data_dict["mix"], backend="soundfile")[0]
         instance_data = {"mix": mix_data}
 
-        npz_1 = np.load(data_dict["mouth1"])
-        npz_2 = np.load(data_dict["mouth2"])
+        npz_video_mouth_1 = np.load(data_dict["mouth1"])
+        npz_video_mouth_2 = np.load(data_dict["mouth2"])
+        npz_mouth_embed_1 = np.load(data_dict["mouth1_embed"])
+        npz_mouth_embed_2 = np.load(data_dict["mouth2_embed"])
 
         instance_data.update(
             {
-                "video1": torch.tensor(npz_1["data"]).unsqueeze(0),
-                "video2": torch.tensor(npz_2["data"]).unsqueeze(0),
+                "video1": torch.tensor(npz_video_mouth_1["data"]).unsqueeze(0),
+                "video2": torch.tensor(npz_video_mouth_2["data"]).unsqueeze(0),
+                "video_embed1" : torch.tensor(npz_mouth_embed_1["data"]).unsqueeze(0),
+                "video_embed2" : torch.tensor(npz_mouth_embed_2["data"]).unsqueeze(0),
             }
         )
 
@@ -118,13 +122,19 @@ class SourceSeparationDataset(BaseDataset):
 
             mouth_path_1 = path.parent.parent.parent.parent / "mouths" / f1
             mouth_path_2 = path.parent.parent.parent.parent / "mouths" / f2
+            mouth_embed_path_1 = path.parent.parent.parent.parent / "mouths_embeds" / f1
+            mouth_embed_path_2 = path.parent.parent.parent.parent / "mouths_embeds" / f2
             assert mouth_path_1.exists()
             assert mouth_path_2.exists()
+            assert mouth_embed_path_1.exists()
+            assert mouth_embed_path_2.exists()
 
             row.update(
                 {
                     "mouth1": str(mouth_path_1),
-                    "mouth2": str(mouth_path_1),
+                    "mouth2": str(mouth_path_2),
+                    "mouth1_embed": str(mouth_embed_path_1),
+                    "mouth2_embed": str(mouth_embed_path_2),
                 }
             )
 
