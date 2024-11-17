@@ -15,7 +15,6 @@ class DualPathRNN(nn.Module):
         num_layers: int = 1,
         bidirectional: bool = True,
         apply_to_time: bool = False,
-        apply_to_video=False,
         *args,
         **kwargs,
     ) -> None:
@@ -55,14 +54,10 @@ class DualPathRNN(nn.Module):
             stride=self.stride,
         )
 
-    # def _get_shape_after_conv(self, size_: int) -> int:
-    #     return int(
-    #         np.ceil((size_ - self.kernel_size) / self.stride) * self.stride
-    #         + self.kernel_size
-    #     )
-
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        if self.apply_to_time:
+        if (
+            self.apply_to_time
+        ):  # to save dims and shapes in the following code we permute time and features
             features = features.permute(0, 1, 3, 2)
 
         features_residual = features
@@ -71,17 +66,19 @@ class DualPathRNN(nn.Module):
 
         features = features.permute(0, 2, 1, 3).reshape(
             batch_size * time, channels, features_size, 1
-        )
+        )  # according to the artilce we apply layers for every time moment independently
 
-        features = self.unfold(features)
+        features = self.unfold(features)  # undolding
 
-        features = self.sru(features.permute(0, 2, 1))[0]
+        features = self.sru(features.permute(0, 2, 1))[0]  # apply SRU
 
-        features = self.linear(features.permute(0, 2, 1))
+        features = self.linear(
+            features.permute(0, 2, 1)
+        )  # return to previous shapes from sru hidden
 
         features = features.reshape(batch_size, time, channels, features_size).permute(
             0, 2, 1, 3
-        )
+        )  # separate batch and time
 
         features += features_residual
 
