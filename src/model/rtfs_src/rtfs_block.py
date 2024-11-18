@@ -105,7 +105,6 @@ class RTFSBlock(nn.Module):
         )
         # global attention module
         global_features = self.layers(global_features)  # B, N, T, (F)
-        print(f"global_features shape {global_features.shape}")
         # add info from global attention
         united_features = []
         for i in range(self.downsample_layers_count):
@@ -114,7 +113,6 @@ class RTFSBlock(nn.Module):
                     local_features=local_features[i], global_features=global_features
                 )
             )
-            print("united_features", united_features[-1].shape)
 
         # reconstruction phase
         reconstructed_x = (
