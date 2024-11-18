@@ -1,28 +1,29 @@
 import torch
-from rtfs_src.audio_decoder import SpectralSourceSeparationDecoder
-from rtfs_src.audio_encoder import RTFS_AudioEncoder
-from rtfs_src.separation_network import SeparationNetwork
+
+from .rtfs_src.audio_decoder import SpectralSourceSeparationDecoder
+from .rtfs_src.audio_encoder import RTFS_AudioEncoder
+from .rtfs_src.separation_network import SeparationNetwork
 
 
 class RTFSModel(torch.nn.Module):
     def __init__(
         self,
-        audio_encoder: torch.nn.Module = RTFS_AudioEncoder,
-        s3_decoder_block: torch.nn.Module = SpectralSourceSeparationDecoder,
-        input_audio_channels=256,
-        input_video_channels=512,
+        # audio_encoder: torch.nn.Module,
+        # s3_decoder_block: torch.nn.Module,
+        # separation_network: torch.nn.Module,
         *args,
         **kwargs,
     ) -> None:
         super(RTFSModel, self).__init__(*args, **kwargs)
 
-        self.audio_encoder = audio_encoder
+        self.audio_encoder = RTFS_AudioEncoder()
 
         self.separation_network = SeparationNetwork(
-            audio_channels=input_audio_channels,
-            video_channels=input_video_channels,
-        )  # TODO add delete hardcode
-        self.s3_decoder_block = s3_decoder_block
+            audio_channels=256, video_channels=512
+        )
+        self.s3_decoder_block = SpectralSourceSeparationDecoder(
+            input_channels=256,
+        )
 
     def forward(
         self, raw_audio: torch.Tensor, video_features: torch.Tensor = None  # B, N, T, F
@@ -45,15 +46,9 @@ class RTFSModel(torch.nn.Module):
             audio_features=audio_features, video_features=video_features
         )
 
-        # S^3 block
-        final_audio_features = self.s3_block(
-            separated_features=separated_features, audio_features=audio_features
-        )  # B, n_src, N, T, (F)
-
-        # audio decoder
-        return self.audio_decoder(
-            final_audio_features, shape=raw_audio.shape
-        )  # B, n_src, L
+        return self.s3_decoder_block(
+            processed_audio=separated_features, original_audio=audio_features
+        )
 
 
 def test_shape():

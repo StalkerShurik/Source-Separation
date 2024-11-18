@@ -2,10 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .attention_block import Attention2D
 from .conv_blocks import ConvBlockWithActivation
 from .reconstruction_block import ReconstructionBlock
-from .rnn_block import DualPathRNN
 
 
 class RTFSBlock(nn.Module):
@@ -13,25 +11,21 @@ class RTFSBlock(nn.Module):
         self,
         in_channels: int,
         hid_channels: int = 64,
-        kernel_size: int = 5,
+        kernel_size: int = 4,
         stride: int = 2,
-        upsampling_depth: int = 2,
+        downsample_layers_count: int = 2,
         is_conv_2d: bool = True,
-        is2d: bool = True,
-        rnn_hidden=32,
+        attention_layers: nn.Module = None,
     ) -> None:
         super(RTFSBlock, self).__init__()
         self.in_channels = in_channels
         self.hid_channels = hid_channels
         self.kernel_size = kernel_size
         self.stride = stride
-        self.upsampling_depth = upsampling_depth
+        self.downsample_layers_count = downsample_layers_count
         self.is_conv_2d = is_conv_2d
-        self.is2d = is2d
 
-        self.normalization_class = nn.BatchNorm2d if is_conv_2d else nn.BatchNorm1d
-        self.pool = F.adaptive_avg_pool2d if self.is2d else F.adaptive_avg_pool1d
-        self.conv_class = nn.Conv2d if self.is2d else nn.Conv1d
+        self.pool = F.adaptive_avg_pool2d if self.is_conv_2d else F.adaptive_avg_pool1d
 
         self.gateway = ConvBlockWithActivation(
             in_channels=self.in_channels,
@@ -58,25 +52,11 @@ class RTFSBlock(nn.Module):
                     groups=self.hid_channels,
                     is_conv_2d=self.is_conv_2d,
                 )
-                for i in range(self.upsampling_depth)
+                for i in range(self.downsample_layers_count)
             ]
         )
 
-        self.layers = nn.Sequential(
-            DualPathRNN(
-                in_channels=self.hid_channels,
-                hidden_channels=rnn_hidden,
-                apply_to_time=False,
-            ),
-            DualPathRNN(
-                in_channels=self.hid_channels,
-                hidden_channels=rnn_hidden,
-                apply_to_time=True,
-            ),
-            Attention2D(
-                in_channels=self.hid_channels, hidden_channels=self.hid_channels
-            ),
-        )
+        self.layers = attention_layers
 
         self.fusion_layers = nn.ModuleList(
             [
@@ -85,7 +65,7 @@ class RTFSBlock(nn.Module):
                     kernel_size=self.kernel_size,
                     is_conv_2d=self.is_conv_2d,
                 )
-                for _ in range(self.upsampling_depth)
+                for _ in range(self.downsample_layers_count)
             ]
         )
         self.concat_layers = nn.ModuleList(
@@ -95,17 +75,14 @@ class RTFSBlock(nn.Module):
                     kernel_size=self.kernel_size,
                     is_conv_2d=self.is_conv_2d,
                 )
-                for _ in range(self.upsampling_depth - 1)
+                for _ in range(self.downsample_layers_count - 1)
             ]
         )
-        self.residual_conv = nn.Sequential(
-            self.conv_class(
-                in_channels=self.hid_channels,
-                out_channels=self.hid_channels,
-                kernel_size=1,
-            ),
-            self.normalization_class(self.in_channels),  # diff
-            nn.ReLU(),  # diff
+        self.residual_conv = ConvBlockWithActivation(
+            in_channels=self.hid_channels,
+            out_channels=self.in_channels,
+            kernel_size=1,
+            is_conv_2d=self.is_conv_2d,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -114,7 +91,7 @@ class RTFSBlock(nn.Module):
         projected_x = self.projection(residual)
         # bottom-up
         local_features = [self.downsample_layers[0](projected_x)]
-        for i in range(1, self.upsampling_depth):
+        for i in range(1, self.downsample_layers_count):
             local_features.append(self.downsample_layers[i](local_features[-1]))
 
         # AG
@@ -128,21 +105,23 @@ class RTFSBlock(nn.Module):
         )
         # global attention module
         global_features = self.layers(global_features)  # B, N, T, (F)
-
+        print(f"global_features shape {global_features.shape}")
         # add info from global attention
-        united_features = [
-            self.fusion_layers[i](
-                local_features=local_features[i], global_features=global_features
+        united_features = []
+        for i in range(self.downsample_layers_count):
+            united_features.append(
+                self.fusion_layers[i](
+                    local_features=local_features[i], global_features=global_features
+                )
             )
-            for i in range(self.upsampling_depth)
-        ]
+            print("united_features", united_features[-1].shape)
 
         # reconstruction phase
         reconstructed_x = (
             self.concat_layers[-1](united_features[-2], united_features[-1])
             + local_features[-2]
         )
-        for i in range(self.upsampling_depth - 3, -1, -1):
+        for i in range(self.downsample_layers_count - 3, -1, -1):
             reconstructed_x = (
                 self.concat_layers[i](
                     local_features=united_features[i], global_features=reconstructed_x

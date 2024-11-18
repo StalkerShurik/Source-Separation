@@ -108,16 +108,16 @@ class Attention2D(nn.Module):
 
 class PositionalEncoder(nn.Module):
     # original sinusoid encoding from https://arxiv.org/abs/1706.03762
-    def __init__(self, in_channels: int, max_len: int = 10000):
+    def __init__(self, in_channels: int, max_len: int = 10000) -> None:
         super(PositionalEncoder, self).__init__()
         self.in_channels = in_channels
         self.max_len = max_len
 
-        encoded_positions = torch.zeros(self.max_len, self.channels)
+        encoded_positions = torch.zeros(self.max_len, self.in_channels)
         position = torch.arange(0, self.max_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(
-            torch.arange(0, self.channels, 2, dtype=torch.float)
-            * -(np.log(self.max_len) / self.channels)
+            torch.arange(0, self.in_channels, 2, dtype=torch.float)
+            * -(np.log(self.max_len) / self.in_channels)
         )
 
         encoded_positions[:, 0::2] = torch.sin(position * div_term)
@@ -125,7 +125,7 @@ class PositionalEncoder(nn.Module):
         encoded_positions = encoded_positions.unsqueeze(0)
         self.register_buffer("encoded_positions", encoded_positions)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x + self.encoded_positions[:, : x.size(1)]
         return x
 
@@ -136,7 +136,7 @@ class Attention1D(nn.Module):
         in_channels: int,
         num_heads: int = 8,
         dropout: float = 0.1,
-    ):
+    ) -> None:
         super(Attention1D, self).__init__()
 
         assert in_channels % num_heads == 0
@@ -145,19 +145,19 @@ class Attention1D(nn.Module):
         self.num_heads = num_heads
         self.dropout = dropout
 
-        self.norm_1 = nn.LayerNorm(self.in_channgels)
-        self.positional_encoder = PositionalEncoder(self.in_channels)
+        self.norm_1 = nn.LayerNorm(self.in_channels)
+        self.positional_encoder = PositionalEncoder(in_channels=self.in_channels)
         self.attention = nn.MultiheadAttention(
             embed_dim=self.in_channels,
-            num_heads=self.n_head,
+            num_heads=self.num_heads,
             dropout=self.dropout,
             batch_first=True,
         )
         self.additional_dropout = nn.Dropout(self.dropout)
-        self.norm_2 = nn.LayerNorm(self.in_channgels)
+        self.norm_2 = nn.LayerNorm(self.in_channels)
         self.drop_path = DropPath(self.dropout)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         res = x
         x = x.transpose(1, 2)  # B, C, T -> B, T, C
 
@@ -182,12 +182,12 @@ class GlobalAttention1d(nn.Module):
         dropout: float = 0.1,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         super(GlobalAttention1d, self).__init__()
         self.in_channels = in_channels
         self.hid_chan = 2 * self.in_channels
         self.kernel_size = kernel_size
-        self.n_head = num_heads
+        self.num_heads = num_heads
         self.dropout = dropout
 
         self.layers = nn.Sequential(
@@ -205,5 +205,5 @@ class GlobalAttention1d(nn.Module):
             ),
         )
 
-    def forward(self, x: torch.Tensor):
-        self.layers(x)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.layers(x)
