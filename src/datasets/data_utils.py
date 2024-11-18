@@ -75,8 +75,15 @@ def get_dataloaders(config, device):
             f"be larger than the dataset length ({len(dataset)})"
         )
 
+        batch_size = config.dataloader['batch_size']
+        if batch_size % 2 == 1:
+            raise Exception("batch size must be even")
+
+        config_with_half_batch = dict(config.dataloader)
+        config_with_half_batch.update({"batch_size": batch_size // 2})
+
         partition_dataloader = instantiate(
-            config.dataloader,
+            config_with_half_batch,
             dataset=dataset,
             collate_fn=collate_fn,
             drop_last=(dataset_partition == "train"),

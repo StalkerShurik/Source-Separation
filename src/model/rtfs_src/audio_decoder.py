@@ -42,6 +42,8 @@ class SpectralSourceSeparationDecoder(nn.Module):
         self.features = features
         self.hop_length = hop_length
 
+        self.window = nn.parameter.Parameter(torch.hann_window(window_length=self.features), requires_grad=False)
+
     def forward(self, processed_audio: torch.Tensor, original_audio: torch.Tensor):
         processed_audio = self.preact(processed_audio)
         processed_audio = self.M(processed_audio)
@@ -66,7 +68,7 @@ class SpectralSourceSeparationDecoder(nn.Module):
             n_fft=self.features,
             hop_length=self.hop_length,
             win_length=self.features,
-            window=torch.hann_window(window_length=self.features),
+            window=self.window,
             length=self.length,
         )
 

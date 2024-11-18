@@ -1,2 +1,2 @@
 _target_: torch.utils.data.DataLoader
-batch_size: 1
+batch_size: 4

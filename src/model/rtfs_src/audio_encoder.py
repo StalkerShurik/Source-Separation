@@ -35,6 +35,8 @@ class RTFS_AudioEncoder(nn.Module):
             # ),
         )
 
+        self.window = nn.parameter.Parameter(torch.hann_window(window_length=self.features), requires_grad=False)
+
     def forward(self, raw_audio: torch.Tensor) -> torch.Tensor:
         """
         Input: tensor with audio seqs: B x L
@@ -45,7 +47,7 @@ class RTFS_AudioEncoder(nn.Module):
             n_fft=self.features,
             hop_length=self.hop_length,
             win_length=self.features,
-            window=torch.hann_window(window_length=self.features),
+            window=self.window,
             return_complex=True,
         )
 

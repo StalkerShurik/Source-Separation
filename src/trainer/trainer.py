@@ -38,6 +38,7 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
 
         outputs = self.model(**batch)
+        
         batch.update(outputs)
 
         all_losses = self.criterion(**batch)

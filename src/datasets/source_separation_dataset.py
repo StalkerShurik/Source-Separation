@@ -57,8 +57,8 @@ class SourceSeparationDataset(BaseDataset):
 
         instance_data.update(
             {
-                "video1": torch.tensor(npz_video_mouth_1["data"]).unsqueeze(0),
-                "video2": torch.tensor(npz_video_mouth_2["data"]).unsqueeze(0),
+                #"video1": torch.tensor(npz_video_mouth_1["data"]).unsqueeze(0),
+                #"video2": torch.tensor(npz_video_mouth_2["data"]).unsqueeze(0),
                 "video_embed1" : torch.tensor(npz_mouth_embed_1["data"]).unsqueeze(0),
                 "video_embed2" : torch.tensor(npz_mouth_embed_2["data"]).unsqueeze(0),
             }
