@@ -1,14 +1,13 @@
 import torch
-from rtfs_src import separation_network as separation_network_module
 from rtfs_src.audio_decoder import SpectralSourceSeparationDecoder
 from rtfs_src.audio_encoder import RTFS_AudioEncoder
+from rtfs_src.separation_network import SeparationNetwork
 
 
 class RTFSModel(torch.nn.Module):
     def __init__(
         self,
         audio_encoder: torch.nn.Module = RTFS_AudioEncoder,
-        separation_network: torch.nn.Module = separation_network_module.SeparationNetwork,
         s3_decoder_block: torch.nn.Module = SpectralSourceSeparationDecoder,
         input_audio_channels=256,
         input_video_channels=512,
@@ -17,10 +16,11 @@ class RTFSModel(torch.nn.Module):
     ) -> None:
         super(RTFSModel, self).__init__(*args, **kwargs)
 
-        self.audio_encoder = audio_encoder()
+        self.audio_encoder = audio_encoder
 
-        self.separation_network = separation_network(
-            audio_channels=input_audio_channels, video_channels=input_video_channels
+        self.separation_network = SeparationNetwork(
+            audio_channels=input_audio_channels,
+            video_channels=input_video_channels,
         )  # TODO add delete hardcode
         self.s3_decoder_block = s3_decoder_block
 

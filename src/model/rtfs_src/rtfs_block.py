@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .attention_block import Attn
+from .attention_block import Attention2D
 from .conv_blocks import ConvBlockWithActivation
 from .reconstruction_block import ReconstructionBlock
 from .rnn_block import DualPathRNN
@@ -73,7 +73,9 @@ class RTFSBlock(nn.Module):
                 hidden_channels=rnn_hidden,
                 apply_to_time=True,
             ),
-            Attn(in_channels=self.hid_channels, hidden_channels=self.hid_channels),
+            Attention2D(
+                in_channels=self.hid_channels, hidden_channels=self.hid_channels
+            ),
         )
 
         self.fusion_layers = nn.ModuleList(
