@@ -1,15 +1,17 @@
 import torch
 import torch.nn as nn
 
+from .attention_block import Attention2D, GlobalAttention1d
 from .conv_blocks import ConvBlockWithActivation
+from .rnn_block import DualPathRNN
 from .rtfs_block import RTFSBlock
 
 
 class CAF(nn.Module):
-    def __init__(self, audio_channels: int, video_channels: int, n_heads=8):
+    def __init__(self, audio_channels: int, video_channels: int, num_headss=8):
         super(CAF, self).__init__()
 
-        self.nheads = n_heads
+        self.nheads = num_headss
 
         self.P1 = ConvBlockWithActivation(
             in_channels=audio_channels,
@@ -29,7 +31,7 @@ class CAF(nn.Module):
 
         self.F1 = ConvBlockWithActivation(
             in_channels=video_channels,
-            out_channels=audio_channels * n_heads,
+            out_channels=audio_channels * num_headss,
             kernel_size=1,
             is_conv_2d=False,
             groups=audio_channels,
@@ -77,24 +79,54 @@ class SeparationNetwork(nn.Module):
         self,
         audio_channels: int,
         video_channels: int,
-        audio_network: nn.Module = RTFSBlock,
-        video_network: nn.Module = RTFSBlock,
-        ap_hid_channels=64,
-        audio_repeats: int = 4,
+        rtfs_repeats: int = 4,
     ) -> None:
         super(SeparationNetwork, self).__init__()
-        self.audio_network = audio_network(
-            in_channels=audio_channels, hid_channels=ap_hid_channels, is_conv_2d=True
+        self.audio_network = RTFSBlock(
+            in_channels=audio_channels,
+            hid_channels=64,
+            kernel_size=4,
+            stride=2,
+            is_conv_2d=True,
+            attention_layers=nn.Sequential(
+                DualPathRNN(
+                    in_channels=64,
+                    hidden_channels=32,
+                    kernel_size=8,
+                    stride=1,
+                    num_layers=4,
+                    bidirectional=True,
+                    apply_to_time=False,
+                ),
+                DualPathRNN(
+                    in_channels=64,
+                    hidden_channels=32,
+                    kernel_size=8,
+                    stride=1,
+                    num_layers=4,
+                    bidirectional=True,
+                    apply_to_time=True,
+                ),
+                Attention2D(in_channels=64, hidden_channels=64),
+            ),
         )
-        self.video_network = video_network
+        self.video_network = RTFSBlock(
+            in_channels=video_channels,
+            hid_channels=64,
+            kernel_size=3,
+            stride=2,
+            is_conv_2d=False,
+            attention_layers=nn.Sequential(
+                GlobalAttention1d(
+                    in_channels=64, kernel_size=3, num_heads=8, dropout=0.1
+                ),
+            ),
+        )
+        self.rtfs_repeats = rtfs_repeats
 
-        self.audio_bn_chan = audio_channels
-        self.video_bn_chan = video_channels
-
-        self.audio_repeats = audio_repeats
-
-        self.CAE = CAF(
-            audio_channels, video_channels
+        self.caf = CAF(
+            audio_channels=audio_channels,
+            video_channels=video_channels,
         )  # CHECK IF IT IS APPROPRIATE CHANNELS
 
     def forward(
@@ -106,11 +138,13 @@ class SeparationNetwork(nn.Module):
 
         video_features = self.video_network(video_features)
 
-        audio_features = self.CAE(
+        audio_features = self.caf(
             audio_features=audio_features, video_features=video_features
         )
 
-        for j in range(self.audio_repeats):
-            audio_features = self.audio_net(audio_features + audio_features_residual)
+        for _ in range(self.rtfs_repeats):
+            audio_features = self.audio_network(
+                audio_features + audio_features_residual
+            )
 
         return audio_features

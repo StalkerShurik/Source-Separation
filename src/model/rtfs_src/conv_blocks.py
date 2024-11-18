@@ -26,13 +26,22 @@ class ConvBlockWithActivation(nn.Module):
         is_conv_2d: bool,
         bias: bool = False,
         groups: int = 1,
-        padding: int | str = 0,
+        padding: int | str | None = None,
+        dilation: int = 1,
         stride: int = 1,
         activation_function: type = nn.ReLU,
     ) -> None:
         super().__init__()
         self.conv_class = nn.Conv2d if is_conv_2d else nn.Conv1d
         self.norm_class = nn.BatchNorm2d if is_conv_2d else nn.BatchNorm1d
+        if padding is None:
+            padding = dilation * (kernel_size - 1) // 2 if stride > 1 else "same"
+        self.padding = padding
+        self.stride = stride
+        self.dilation = dilation
+        self.kernel_size = kernel_size
+        self.groups = groups
+
         self.layers = nn.Sequential(
             self.conv_class(
                 in_channels=in_channels,
@@ -41,7 +50,7 @@ class ConvBlockWithActivation(nn.Module):
                 bias=bias,
                 groups=groups,
                 padding=padding,
-                stride=stride
+                stride=stride,
             ),
             self.norm_class(out_channels),
             activation_function(),

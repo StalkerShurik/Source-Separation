@@ -9,10 +9,8 @@ class RTFS_AudioEncoder(nn.Module):
         features: int = 256,
         output_channels: int = 256,
         kernel_size: int = 3,
-        *args,
-        **kwargs
     ) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
         self.hop_length: int = hop_length
         self.features: int = features

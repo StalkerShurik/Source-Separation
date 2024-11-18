@@ -69,7 +69,7 @@ class ReconstructionBlock(nn.Module):
         else:
             interpolated_global_features = F.interpolate(
                 global_features,
-                size=next_size,
+                size=next_shape,
             )
             global_embeds = self.global_embed_block(interpolated_global_features)
             coeff = self.coeff_block(interpolated_global_features)
