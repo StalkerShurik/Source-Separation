@@ -9,6 +9,7 @@ pandas
 wandb
 comet_ml
 hydra-core
+sru
 
 black
 isort
@@ -19,3 +20,6 @@ soundfile==0.12.1
 
 pesq==0.0.4
 pystoi==0.4.1
+
+docutils
+sphinx
