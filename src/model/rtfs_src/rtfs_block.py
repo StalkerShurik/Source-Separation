@@ -110,10 +110,8 @@ class RTFSBlock(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: B, C, T, (F)
-        print(f"RTFS INPUT shape {x.shape}")
         residual = self.gateway(x)
         projected_x = self.projection(residual)
-        print(f"projected shape {projected_x.shape}")
         # bottom-up
         local_features = [self.downsample_layers[0](projected_x)]
         for i in range(1, self.upsampling_depth):
@@ -128,7 +126,6 @@ class RTFSBlock(nn.Module):
             )
             for features in local_features
         )
-        print(f"downsamples shape {global_features.shape}")
         # global attention module
         global_features = self.layers(global_features)  # B, N, T, (F)
 
