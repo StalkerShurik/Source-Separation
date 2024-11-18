@@ -79,12 +79,12 @@ class SeparationNetwork(nn.Module):
         video_channels: int,
         audio_network: nn.Module = RTFSBlock,
         video_network: nn.Module = RTFSBlock,
-        AP_hid_channels=64,
+        ap_hid_channels=64,
         audio_repeats: int = 4,
     ) -> None:
         super(SeparationNetwork, self).__init__()
         self.audio_network = audio_network(
-            in_channels=audio_channels, hid_channels=AP_hid_channels, is_conv_2d=True
+            in_channels=audio_channels, hid_channels=ap_hid_channels, is_conv_2d=True
         )
         self.video_network = video_network
 
