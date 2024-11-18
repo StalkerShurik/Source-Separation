@@ -26,20 +26,37 @@ class RTFSModel(torch.nn.Module):
         )
 
     def forward(
-        self, raw_audio: torch.Tensor, video_features: torch.Tensor = None  # B, N, T, F
+        self, mix: torch.Tensor, video_embed: torch.Tensor = None, **kwargs  # B, N, T, F
     ) -> torch.Tensor:
+
+        mix = torch.concat([mix, mix], dim=0)
+
         audio_features = self.audio_encoder(
-            raw_audio=raw_audio
+            raw_audio=mix
         )  # B, 1, L -> B, N, T, (F)
 
         # CAF BLOCK + R-stacked RTFS blocks
 
-        video_features = video_features.transpose(-1, -2)
+        video_features = video_embed.transpose(-1, -2)
 
         separated_features = self.separation_network(
             audio_features=audio_features, video_features=video_features
         )
 
-        return self.s3_decoder_block(
+        decoded = self.s3_decoder_block(
             processed_audio=separated_features, original_audio=audio_features
         )
+
+        decoded_dict = {}
+
+        batch_size, seq_len = decoded.shape
+
+        if batch_size % 2 != 0:
+            raise Exception("batch size is not even")
+
+        decoded_dict["predict"] = torch.empty((batch_size // 2, 2, seq_len)).to(decoded.device)
+
+        decoded_dict["predict"][:,0,:] = decoded[:batch_size // 2]
+        decoded_dict["predict"][:,1,:] = decoded[batch_size // 2:]
+
+        return decoded_dict
