@@ -3,7 +3,9 @@ import torch
 from .rtfs_src.audio_decoder import SpectralSourceSeparationDecoder
 from .rtfs_src.audio_encoder import RTFS_AudioEncoder
 from .rtfs_src.separation_network import SeparationNetwork
-
+from .rtfs_src.rtfs_block import RTFSBlock
+from .rtfs_src.attention_block import Attention2D
+from .rtfs_src.rnn_block import DualPathRNN
 
 class RTFSModel(torch.nn.Module):
     def __init__(
@@ -16,11 +18,12 @@ class RTFSModel(torch.nn.Module):
     ) -> None:
         super(RTFSModel, self).__init__(*args, **kwargs)
 
-        self.audio_encoder = RTFS_AudioEncoder()
+        self.audio_encoder = RTFS_AudioEncoder(output_channels=audio_channels)
 
         self.separation_network = SeparationNetwork(
             audio_channels=256, video_channels=512
         )
+
         self.s3_decoder_block = SpectralSourceSeparationDecoder(
             input_channels=256,
         )

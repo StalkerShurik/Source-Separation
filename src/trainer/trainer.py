@@ -99,3 +99,4 @@ class Trainer(BaseTrainer):
                 ax.set_title(f"{key}_{index + 1}")
                 ax.plot(audio.detach().cpu())
                 self.writer.add_image(f"{key}_{index + 1}", fig)
+                plt.close('all')
