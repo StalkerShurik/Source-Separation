@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from sru import SRU
 
 
+# CHECKED
 class DualPathRNN(nn.Module):
     def __init__(
         self,
@@ -35,9 +36,6 @@ class DualPathRNN(nn.Module):
             self.hidden_channels * 2 if bidirectional else self.unfolded_channels
         )
 
-        # TODO: fix
-        self.norm = nn.LayerNorm([self.in_channels, 1, 1])
-
         self.unfold = nn.Unfold((self.kernel_size, 1), stride=(self.stride, 1))
 
         self.sru = SRU(
@@ -47,7 +45,7 @@ class DualPathRNN(nn.Module):
             bidirectional=self.bidirectional,
         )
 
-        self.linear = nn.ConvTranspose1d(
+        self.conv = nn.ConvTranspose1d(
             self.rnn_out_channels,
             self.in_channels,
             self.kernel_size,
@@ -55,28 +53,30 @@ class DualPathRNN(nn.Module):
         )
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        if (
-            self.apply_to_time
-        ):  # to save dims and shapes in the following code we permute time and features
-            features = features.permute(0, 1, 3, 2)
+        # features dim: B x D x T x F
+        if self.apply_to_time:
+            features = features.permute(0, 1, 3, 2)  # B x D x F x T
 
         features_residual = features
 
-        batch_size, channels, time, features_size = features.shape
+        batch_dim, channels_dim, time_dim, features_dim = features.shape
 
+        # (B * T) x D x F x 1
         features = features.permute(0, 2, 1, 3).reshape(
-            batch_size * time, channels, features_size, 1
+            batch_dim * time_dim, channels_dim, features_dim, 1
         )  # according to the artilce we apply layers for every time moment independently
 
-        features = self.unfold(features)  # undolding
+        features = self.unfold(features)  # (B * T) x 8D x F'
 
-        features = self.sru(features.permute(0, 2, 1))[0]  # apply SRU
+        # (B * T) x 2h x F'
+        features = self.sru(features.permute(0, 2, 1))[0].permute(0, 2, 1)  # apply SRU
 
-        features = self.linear(
-            features.permute(0, 2, 1)
-        )  # return to previous shapes from sru hidden
+        # (B * T) x D x F'
+        features = self.conv(features)
 
-        features = features.reshape(batch_size, time, channels, features_size).permute(
+        features = features.reshape(
+            batch_dim, time_dim, channels_dim, features_dim
+        ).permute(
             0, 2, 1, 3
         )  # separate batch and time
 

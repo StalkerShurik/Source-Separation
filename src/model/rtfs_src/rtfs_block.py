@@ -27,18 +27,11 @@ class RTFSBlock(nn.Module):
 
         self.pool = F.adaptive_avg_pool2d if self.is_conv_2d else F.adaptive_avg_pool1d
 
-        self.gateway = ConvBlockWithActivation(
-            in_channels=self.in_channels,
-            out_channels=self.in_channels,
-            kernel_size=1,
-            groups=self.in_channels,
-            activation_function=nn.PReLU,
-            is_conv_2d=self.is_conv_2d,
-        )
         self.projection = ConvBlockWithActivation(
             in_channels=self.in_channels,
             out_channels=self.hid_channels,
             kernel_size=1,
+            activation_function=nn.ReLU,
             is_conv_2d=self.is_conv_2d,
         )
 
@@ -51,6 +44,7 @@ class RTFSBlock(nn.Module):
                     stride=1 if i == 0 else self.stride,
                     groups=self.hid_channels,
                     is_conv_2d=self.is_conv_2d,
+                    activation_function=nn.Identity,  # ?
                 )
                 for i in range(self.downsample_layers_count)
             ]
@@ -83,14 +77,16 @@ class RTFSBlock(nn.Module):
             out_channels=self.in_channels,
             kernel_size=1,
             is_conv_2d=self.is_conv_2d,
+            activation_function=nn.ReLU,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: B, C, T, (F)
-        residual = self.gateway(x)
+
+        residual = x
         projected_x = self.projection(residual)
         # bottom-up
-        local_features = [self.downsample_layers[0](projected_x)]
+        local_features = [self.downsample_layers[0](projected_x)]  # >>
         for i in range(1, self.downsample_layers_count):
             local_features.append(self.downsample_layers[i](local_features[-1]))
 
@@ -106,7 +102,7 @@ class RTFSBlock(nn.Module):
         # global attention module
         global_features = self.layers(global_features)  # B, N, T, (F)
         # add info from global attention
-        united_features = []
+        united_features = []  # A` >>
         for i in range(self.downsample_layers_count):
             united_features.append(
                 self.fusion_layers[i](
@@ -114,7 +110,7 @@ class RTFSBlock(nn.Module):
                 )
             )
 
-        # reconstruction phase
+        # reconstruction phase  A``
         reconstructed_x = (
             self.concat_layers[-1](united_features[-2], united_features[-1])
             + local_features[-2]

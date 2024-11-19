@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .conv_blocks import ConvBlockWithActivation, DropPath, FeedForwardBlock
+from .conv_blocks import AttentionConvBlockWithNormalization, DropPath, FeedForwardBlock
 
 
 class Attention2D(nn.Module):
@@ -15,6 +15,7 @@ class Attention2D(nn.Module):
         self,
         in_channels: int,
         hidden_channels: int,
+        features_dim: int,
         num_heads: int = 4,
         *args,
         **kwargs,  # E
@@ -24,38 +25,46 @@ class Attention2D(nn.Module):
         assert in_channels % num_heads == 0
 
         self.q_heads: nn.ModuleList = nn.ModuleList(
-            ConvBlockWithActivation(
+            AttentionConvBlockWithNormalization(
                 in_channels=in_channels,
                 out_channels=hidden_channels,
                 kernel_size=1,
                 is_conv_2d=True,
+                activation_function=nn.PReLU,
+                features_dim=features_dim,
             )
             for _ in range(num_heads)
         )
         self.k_heads: nn.ModuleList = nn.ModuleList(
-            ConvBlockWithActivation(
+            AttentionConvBlockWithNormalization(
                 in_channels=in_channels,
                 out_channels=hidden_channels,
                 kernel_size=1,
                 is_conv_2d=True,
+                activation_function=nn.PReLU,
+                features_dim=features_dim,
             )
             for _ in range(num_heads)
         )
         self.v_heads: nn.ModuleList = nn.ModuleList(
-            ConvBlockWithActivation(
+            AttentionConvBlockWithNormalization(
                 in_channels=in_channels,
                 out_channels=in_channels // num_heads,
                 kernel_size=1,
                 is_conv_2d=True,
+                activation_function=nn.PReLU,
+                features_dim=features_dim,
             )
             for _ in range(num_heads)
         )
 
-        self.ffn: nn.Module = ConvBlockWithActivation(
+        self.ffn: nn.Module = AttentionConvBlockWithNormalization(
             in_channels=in_channels,
             out_channels=in_channels,
             kernel_size=1,
             is_conv_2d=True,
+            activation_function=nn.PReLU,
+            features_dim=features_dim,
         )
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
