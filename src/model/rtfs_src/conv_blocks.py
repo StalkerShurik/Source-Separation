@@ -38,12 +38,12 @@ class ConvBlockWithActivation(nn.Module):
             padding = dilation * (kernel_size - 1) // 2 if stride > 1 else "same"
 
         if is_layer_norm:
-            self.norm = nn.GroupNorm(num_groups=1, num_channels=self.out_channels)
+            self.norm = nn.GroupNorm(num_groups=1, num_channels=out_channels)
         else:
             self.norm = (
-                nn.BatchNorm2d(self.out_channels)
+                nn.BatchNorm2d(out_channels)
                 if is_conv_2d
-                else nn.BatchNorm1d(self.out_channels)
+                else nn.BatchNorm1d(out_channels)
             )
 
         self.padding = padding

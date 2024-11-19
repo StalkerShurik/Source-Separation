@@ -63,14 +63,12 @@ class CAF(nn.Module):
         audio_value = self.audio_conv_p1(audio_features)  # B x Ca x Ta x F
         audio_gate = self.audio_conv_p2(audio_features)  # B x Ca x Ta x F
 
-        video_attn = self.video_conv_f1(video_features)  # B x (Ca x h) x Ta
+        video_attn = self.video_conv_f1(video_features)  # B x (Ca x h) x Tv
 
-        # B x Ca x Ta
-        video_attn = (
-            video_attn.reshape(batch_dim, audio_channels_dim, self.num_heads, -1)
-            .mean(dim=2)
-            .view(batch_dim, audio_channels_dim, time_dim)
-        )
+        # B x Ca x Tv
+        video_attn = video_attn.reshape(
+            batch_dim, audio_channels_dim, self.num_heads, -1
+        ).mean(dim=2)
 
         video_attn = torch.softmax(video_attn, -1)
         video_attn = F.interpolate(video_attn, size=time_dim)
