@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .attention_block import Attention2D, GlobalAttention1d
 from .conv_blocks import ConvBlockWithActivation
@@ -7,13 +8,14 @@ from .rnn_block import DualPathRNN
 from .rtfs_block import RTFSBlock
 
 
+# CHECKED!
 class CAF(nn.Module):
-    def __init__(self, audio_channels: int, video_channels: int, num_headss=8):
+    def __init__(self, audio_channels: int, video_channels: int, num_heads=8):
         super(CAF, self).__init__()
 
-        self.nheads = num_headss
+        self.num_heads = num_heads
 
-        self.P1 = ConvBlockWithActivation(
+        self.audio_conv_p1 = ConvBlockWithActivation(
             in_channels=audio_channels,
             out_channels=audio_channels,
             kernel_size=1,
@@ -21,23 +23,25 @@ class CAF(nn.Module):
             groups=audio_channels,
             activation_function=torch.nn.Identity,
         )
-        self.P2 = ConvBlockWithActivation(
+
+        self.audio_conv_p2 = ConvBlockWithActivation(
             in_channels=audio_channels,
             out_channels=audio_channels,
             kernel_size=1,
             is_conv_2d=True,
             groups=audio_channels,
+            activation_function=nn.ReLU,
         )
 
-        self.F1 = ConvBlockWithActivation(
+        self.video_conv_f1 = ConvBlockWithActivation(
             in_channels=video_channels,
-            out_channels=audio_channels * num_headss,
+            out_channels=audio_channels * num_heads,
             kernel_size=1,
             is_conv_2d=False,
             groups=audio_channels,
             activation_function=torch.nn.Identity,
         )
-        self.F2 = ConvBlockWithActivation(
+        self.video_conv_f2 = ConvBlockWithActivation(
             in_channels=video_channels,
             out_channels=audio_channels,
             kernel_size=1,
@@ -54,19 +58,25 @@ class CAF(nn.Module):
         video_features: B x Cv x Ta
         """
 
-        B, Ca, Ta, F = audio_features.shape
+        batch_dim, audio_channels_dim, time_dim, features_dim = audio_features.shape
 
-        audio_value = self.P1(audio_features)  # B x Ca x Ta x F
-        audio_gate = self.P2(audio_features)  # B x Ca x Ta x F
+        audio_value = self.audio_conv_p1(audio_features)  # B x Ca x Ta x F
+        audio_gate = self.audio_conv_p2(audio_features)  # B x Ca x Ta x F
 
-        video_attn = self.F1(video_features)
+        video_attn = self.video_conv_f1(video_features)  # B x (Ca x h) x Ta
 
-        video_attn = video_attn.reshape(B, Ca, self.nheads, -1).mean(dim=2)
+        # B x Ca x Ta
+        video_attn = (
+            video_attn.reshape(batch_dim, audio_channels_dim, self.num_heads, -1)
+            .mean(dim=2)
+            .view(batch_dim, audio_channels_dim, time_dim)
+        )
+
         video_attn = torch.softmax(video_attn, -1)
-        video_attn = torch.nn.functional.interpolate(video_attn, size=Ta)
+        video_attn = F.interpolate(video_attn, size=time_dim)
 
-        video_key = self.F2(video_features)
-        video_key = torch.nn.functional.interpolate(video_key, size=Ta)
+        video_key = self.video_conv_f2(video_features)
+        video_key = torch.nn.functional.interpolate(video_key, size=time_dim)
 
         return (
             video_key.unsqueeze(-1) * audio_gate
