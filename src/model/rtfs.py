@@ -4,7 +4,6 @@ from .rtfs_src.audio_decoder import SpectralSourceSeparationDecoder
 from .rtfs_src.audio_encoder import RTFS_AudioEncoder
 from .rtfs_src.separation_network import SeparationNetwork
 
-
 class RTFSModel(torch.nn.Module):
     def __init__(
         self,
@@ -21,6 +20,7 @@ class RTFSModel(torch.nn.Module):
         self.separation_network = SeparationNetwork(
             audio_channels=256, video_channels=512
         )
+
         self.s3_decoder_block = SpectralSourceSeparationDecoder(
             input_channels=256,
         )
