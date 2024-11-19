@@ -33,9 +33,9 @@ class ConvBlockWithActivation(nn.Module):
     ) -> None:
         super().__init__()
         self.conv_class = nn.Conv2d if is_conv_2d else nn.Conv1d
-        self.norm_class = nn.BatchNorm2d if is_conv_2d else nn.BatchNorm1d
         if padding is None:
             padding = dilation * (kernel_size - 1) // 2 if stride > 1 else "same"
+
         self.padding = padding
         self.stride = stride
         self.dilation = dilation
@@ -52,7 +52,7 @@ class ConvBlockWithActivation(nn.Module):
                 padding=padding,
                 stride=stride,
             ),
-            self.norm_class(out_channels),
+            nn.GroupNorm(num_groups=1, num_channels=self.out_channels),
             activation_function(),
         )
 
@@ -107,3 +107,66 @@ class FeedForwardBlock(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         saved_x = x
         return self.layers(x) + saved_x
+
+
+class AttentionNormalization2d(nn.Module):
+    def __init__(self, channels_dim: int, features_dim: int, eps: float = 1e-5):
+        super(AttentionNormalization2d, self).__init__()
+        param_size = [1, channels_dim, 1, features_dim]
+
+        self.dim = (1, 3)
+        self.gamma = nn.Parameter(torch.ones(*param_size))
+        self.beta = nn.Parameter(torch.zeros(*param_size))
+        self.eps = eps
+
+    def forward(self, x: torch.Tensor):
+        mu_ = x.mean(dim=self.dim, keepdim=True)
+        std_ = x.std(dim=self.dim, correction=0, keepdim=True)
+        return ((x - mu_) / std_) * self.gamma + self.beta
+
+
+class AttentionConvBlockWithNormalization(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        features_dim: int,
+        kernel_size: int,
+        is_conv_2d: bool,
+        bias: bool = False,
+        groups: int = 1,
+        padding: int | str | None = None,
+        dilation: int = 1,
+        stride: int = 1,
+        activation_function: type = nn.PReLU,
+    ) -> None:
+        super().__init__()
+        self.conv_class = nn.Conv2d if is_conv_2d else nn.Conv1d
+        if padding is None:
+            padding = dilation * (kernel_size - 1) // 2 if stride > 1 else "same"
+
+        self.padding = padding
+        self.stride = stride
+        self.dilation = dilation
+        self.kernel_size = kernel_size
+        self.groups = groups
+
+        self.layers = nn.Sequential(
+            self.conv_class(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                bias=bias,
+                groups=groups,
+                padding=padding,
+                stride=stride,
+            ),
+            activation_function(),
+            AttentionNormalization2d(
+                channels_dim=out_channels,
+                features_dim=features_dim,
+            ),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.layers(x)

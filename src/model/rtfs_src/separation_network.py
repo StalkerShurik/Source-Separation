@@ -107,7 +107,9 @@ class SeparationNetwork(nn.Module):
                     bidirectional=True,
                     apply_to_time=True,
                 ),
-                Attention2D(in_channels=64, hidden_channels=64),
+                Attention2D(
+                    in_channels=64, features_dim=64, hidden_channels=4, num_heads=4
+                ),
             ),
         )
         self.video_network = RTFSBlock(
