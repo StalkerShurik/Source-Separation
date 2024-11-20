@@ -1,8 +1,8 @@
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from sru import SRU
+
+from .conv_blocks import AttentionNormalization2d
 
 
 # CHECKED
@@ -35,6 +35,7 @@ class DualPathSRU(nn.Module):
         self.rnn_out_channels = (
             self.hidden_channels * 2 if bidirectional else self.unfolded_channels
         )
+        self.norm = AttentionNormalization2d(self.in_channels, 1)
 
         self.unfold = nn.Unfold((self.kernel_size, 1), stride=(self.stride, 1))
 
@@ -57,6 +58,7 @@ class DualPathSRU(nn.Module):
         if self.apply_to_time:
             features = features.permute(0, 1, 3, 2)  # B x D x F x T
 
+        features = self.norm(features)
         features_residual = features
 
         batch_dim, channels_dim, time_dim, features_dim = features.shape
@@ -72,7 +74,6 @@ class DualPathSRU(nn.Module):
         features = self.sru(features.permute(0, 2, 1))[0].permute(0, 2, 1)  # apply SRU
 
         # (B * T) x D x F'
-
         features = self.conv(features)
 
         features = features.reshape(
