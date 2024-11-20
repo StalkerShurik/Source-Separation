@@ -27,6 +27,7 @@ class ReconstructionBlock(nn.Module):
             groups=self.in_channels,
             is_conv_2d=self.is_conv_2d,
             activation_function=nn.Identity,
+            is_layer_norm=not self.is_conv_2d,
         )  # diff: add RELU
 
         self.global_embed_block = ConvBlockWithActivation(  # W 3
@@ -36,6 +37,7 @@ class ReconstructionBlock(nn.Module):
             groups=self.in_channels,
             is_conv_2d=self.is_conv_2d,
             activation_function=nn.Identity,
+            is_layer_norm=not self.is_conv_2d,
         )  # diff: add RELU
 
         self.coeff_block = ConvBlockWithActivation(  # W 1
@@ -45,6 +47,7 @@ class ReconstructionBlock(nn.Module):
             groups=self.in_channels,
             is_conv_2d=self.is_conv_2d,
             activation_function=nn.Sigmoid,
+            is_layer_norm=not self.is_conv_2d,
         )
 
     def forward(

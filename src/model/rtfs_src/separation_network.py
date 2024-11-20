@@ -95,14 +95,15 @@ class SeparationNetwork(nn.Module):
             hid_channels=64,
             kernel_size=4,
             stride=2,
+            downsample_layers_count=2,
             is_conv_2d=True,
             attention_layers=nn.Sequential(
                 DualPathRNN(
                     in_channels=64,
                     hidden_channels=32,
                     kernel_size=8,
-                    stride=1,
                     num_layers=4,
+                    stride=1,
                     bidirectional=True,
                     apply_to_time=False,
                 ),
@@ -125,6 +126,7 @@ class SeparationNetwork(nn.Module):
             hid_channels=64,
             kernel_size=3,
             stride=2,
+            downsample_layers_count=4,
             is_conv_2d=False,
             attention_layers=nn.Sequential(
                 GlobalAttention1d(
