@@ -27,7 +27,6 @@ class ConvBlockWithActivation(nn.Module):
         bias: bool = False,
         groups: int = 1,
         padding: int | str | None = None,
-        dilation: int = 1,
         stride: int = 1,
         is_layer_norm: bool = True,
         activation_function: type = nn.ReLU,
@@ -35,7 +34,7 @@ class ConvBlockWithActivation(nn.Module):
         super().__init__()
         self.conv_class = nn.Conv2d if is_conv_2d else nn.Conv1d
         if padding is None:
-            padding = dilation * (kernel_size - 1) // 2 if stride > 1 else "same"
+            padding = (kernel_size - 1) // 2 if stride > 1 else "same"
 
         if is_layer_norm:
             self.norm = nn.GroupNorm(num_groups=1, num_channels=out_channels)
@@ -48,7 +47,6 @@ class ConvBlockWithActivation(nn.Module):
 
         self.padding = padding
         self.stride = stride
-        self.dilation = dilation
         self.kernel_size = kernel_size
         self.groups = groups
 
@@ -146,18 +144,16 @@ class AttentionConvBlockWithNormalization(nn.Module):
         bias: bool = False,
         groups: int = 1,
         padding: int | str | None = None,
-        dilation: int = 1,
         stride: int = 1,
         activation_function: type = nn.PReLU,
     ) -> None:
         super().__init__()
         self.conv_class = nn.Conv2d if is_conv_2d else nn.Conv1d
         if padding is None:
-            padding = dilation * (kernel_size - 1) // 2 if stride > 1 else "same"
+            padding = (kernel_size - 1) // 2 if stride > 1 else "same"
 
         self.padding = padding
         self.stride = stride
-        self.dilation = dilation
         self.kernel_size = kernel_size
         self.groups = groups
 
