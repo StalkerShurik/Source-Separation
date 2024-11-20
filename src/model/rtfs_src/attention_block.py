@@ -20,7 +20,7 @@ class Attention2D(nn.Module):
         *args,
         **kwargs,  # E
     ):
-        super().__init__(*args, **kwargs)
+        super(Attention2D, self).__init__()
 
         assert in_channels % num_heads == 0
 
