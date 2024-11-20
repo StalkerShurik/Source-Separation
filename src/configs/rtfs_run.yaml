@@ -19,7 +19,7 @@ lr_scheduler:
 loss_function:
   _target_: src.loss.SiSNRLoss
 trainer:
-  log_step: 1000
+  log_step: 100
   n_epochs: 20
   epoch_len: 5000
   device_tensors: ["mix", "target", "video_embed"] # which tensors should be on device (ex. GPU)
