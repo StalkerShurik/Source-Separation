@@ -15,13 +15,13 @@ lr_scheduler:
   max_lr: 1e-3
   pct_start: 1e-3
   div_factor: 1
-  total_steps: 5000
+  total_steps: 100000
 loss_function:
   _target_: src.loss.SiSNRLoss
 trainer:
-  log_step: 50
-  n_epochs: 100
-  epoch_len: 500
+  log_step: 1000
+  n_epochs: 20
+  epoch_len: 5000
   device_tensors: ["mix", "target", "video_embed"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"

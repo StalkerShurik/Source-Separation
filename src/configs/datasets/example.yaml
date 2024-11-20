@@ -8,7 +8,7 @@ val:
   _target_: src.datasets.SourceSeparationDataset
   part: "val"
   instance_transforms: ${transforms.instance_transforms.inference}
-test:
-  _target_: src.datasets.SourceSeparationDataset
-  part: "val"
-  instance_transforms: ${transforms.instance_transforms.inference}
+# test:
+#   _target_: src.datasets.SourceSeparationDataset
+#   part: "val"
+#   instance_transforms: ${transforms.instance_transforms.inference}
