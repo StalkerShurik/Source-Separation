@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from .attention_block import Attention2D, GlobalAttention1d
 from .conv_blocks import ConvBlockWithActivation
-from .rnn_block import DualPathRNN
+from .rnn_block import DualPathSRU
 from .rtfs_block import RTFSBlock
 
 
@@ -97,7 +97,7 @@ class SeparationNetwork(nn.Module):
             stride=2,
             is_conv_2d=True,
             attention_layers=nn.Sequential(
-                DualPathRNN(
+                DualPathSRU(
                     in_channels=64,
                     hidden_channels=32,
                     kernel_size=8,
@@ -106,7 +106,7 @@ class SeparationNetwork(nn.Module):
                     bidirectional=True,
                     apply_to_time=False,
                 ),
-                DualPathRNN(
+                DualPathSRU(
                     in_channels=64,
                     hidden_channels=32,
                     kernel_size=8,

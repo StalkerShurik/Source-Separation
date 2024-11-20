@@ -6,7 +6,7 @@ from sru import SRU
 
 
 # CHECKED
-class DualPathRNN(nn.Module):
+class DualPathSRU(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -19,7 +19,7 @@ class DualPathRNN(nn.Module):
         *args,
         **kwargs,
     ) -> None:
-        super(DualPathRNN, self).__init__()
+        super(DualPathSRU, self).__init__()
         # conv params
         self.in_channels = in_channels
         self.hidden_channels = hidden_channels
@@ -72,6 +72,7 @@ class DualPathRNN(nn.Module):
         features = self.sru(features.permute(0, 2, 1))[0].permute(0, 2, 1)  # apply SRU
 
         # (B * T) x D x F'
+
         features = self.conv(features)
 
         features = features.reshape(
