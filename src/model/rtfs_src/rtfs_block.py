@@ -31,7 +31,7 @@ class RTFSBlock(nn.Module):
             in_channels=self.in_channels,
             out_channels=self.hid_channels,
             kernel_size=1,
-            activation_function=nn.ReLU,
+            activation_function=nn.PReLU,
             is_conv_2d=self.is_conv_2d,
         )
 
@@ -45,6 +45,7 @@ class RTFSBlock(nn.Module):
                     groups=self.hid_channels,
                     is_conv_2d=self.is_conv_2d,
                     activation_function=nn.Identity,  # ?
+                    is_layer_norm=not self.is_conv_2d,
                 )
                 for i in range(self.downsample_layers_count)
             ]
@@ -72,12 +73,11 @@ class RTFSBlock(nn.Module):
                 for _ in range(self.downsample_layers_count - 1)
             ]
         )
-        self.residual_conv = ConvBlockWithActivation(
+        conv_class = nn.Conv2d if is_conv_2d else nn.Conv1d
+        self.residual_conv = conv_class(
             in_channels=self.hid_channels,
             out_channels=self.in_channels,
             kernel_size=1,
-            is_conv_2d=self.is_conv_2d,
-            activation_function=nn.ReLU,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
