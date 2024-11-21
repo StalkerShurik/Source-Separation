@@ -16,7 +16,7 @@ class Attention2D(nn.Module):
         in_channels: int,
         hidden_channels: int,
         features_dim: int,
-        num_heads: int = 4,
+        num_heads: int,
         *args,
         **kwargs,  # E
     ):

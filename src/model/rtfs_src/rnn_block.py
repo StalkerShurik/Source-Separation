@@ -1,19 +1,18 @@
 import torch
 import torch.nn as nn
-from sru import SRU
 
 from .conv_blocks import AttentionNormalization2d
 
 
-# CHECKED
 class DualPathSRU(nn.Module):
     def __init__(
         self,
         in_channels: int,
         hidden_channels: int,
+        num_layers: int,
+        rnn_type: nn.Module,
         kernel_size: int = 8,
         stride: int = 1,
-        num_layers: int = 1,
         bidirectional: bool = True,
         apply_to_time: bool = False,
         *args,
@@ -39,7 +38,7 @@ class DualPathSRU(nn.Module):
 
         self.unfold = nn.Unfold((self.kernel_size, 1), stride=(self.stride, 1))
 
-        self.sru = SRU(
+        self.rnn = rnn_type(
             input_size=self.unfolded_channels,
             hidden_size=self.hidden_channels,
             num_layers=self.num_layers,
@@ -71,7 +70,7 @@ class DualPathSRU(nn.Module):
         features = self.unfold(features)  # (B * T) x 8D x F'
 
         # (B * T) x 2h x F'
-        features = self.sru(features.permute(0, 2, 1))[0].permute(0, 2, 1)  # apply SRU
+        features = self.rnn(features.permute(0, 2, 1))[0].permute(0, 2, 1)  # apply SRU
 
         # (B * T) x D x F'
 
