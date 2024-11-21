@@ -10,9 +10,9 @@ class SpectralSourceSeparationDecoder(nn.Module):
     def __init__(
         self,
         input_channels: int,
-        hop_length: int = 128,
-        features: int = 256,
-        length=32000,
+        hop_length: int,
+        features: int,
+        length: int,
         *args,
         **kwargs
     ):

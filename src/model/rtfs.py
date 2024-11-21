@@ -4,36 +4,44 @@ from .rtfs_src.audio_decoder import SpectralSourceSeparationDecoder
 from .rtfs_src.audio_encoder import RTFS_AudioEncoder
 from .rtfs_src.separation_network import SeparationNetwork
 
+
 class RTFSModel(torch.nn.Module):
     def __init__(
         self,
-        # audio_encoder: torch.nn.Module,
-        # s3_decoder_block: torch.nn.Module,
-        # separation_network: torch.nn.Module,
+        audio_channels: int,
+        video_channels: int,
+        encoder_params: dict,
+        separation_params: dict,
+        decoder_parms: dict,
         *args,
         **kwargs,
     ) -> None:
         super(RTFSModel, self).__init__(*args, **kwargs)
 
-        self.audio_encoder = RTFS_AudioEncoder()
+        self.audio_encoder = RTFS_AudioEncoder(
+            **encoder_params, output_channels=audio_channels
+        )
 
         self.separation_network = SeparationNetwork(
-            audio_channels=256, video_channels=512
+            **separation_params,
+            audio_channels=audio_channels,
+            video_channels=video_channels,
         )
 
         self.s3_decoder_block = SpectralSourceSeparationDecoder(
-            input_channels=256,
+            **decoder_parms,
+            input_channels=audio_channels,
         )
 
     def forward(
-        self, mix: torch.Tensor, video_embed: torch.Tensor = None, **kwargs  # B, N, T, F
+        self,
+        mix: torch.Tensor,
+        video_embed: torch.Tensor = None,
+        **kwargs,  # B, N, T, F
     ) -> torch.Tensor:
-
         mix = torch.concat([mix, mix], dim=0)
 
-        audio_features = self.audio_encoder(
-            raw_audio=mix
-        )  # B, 1, L -> B, N, T, (F)
+        audio_features = self.audio_encoder(raw_audio=mix)  # B, 1, L -> B, N, T, (F)
 
         # CAF BLOCK + R-stacked RTFS blocks
 
@@ -54,9 +62,11 @@ class RTFSModel(torch.nn.Module):
         if batch_size % 2 != 0:
             raise Exception("batch size is not even")
 
-        decoded_dict["predict"] = torch.empty((batch_size // 2, 2, seq_len)).to(decoded.device)
+        decoded_dict["predict"] = torch.empty((batch_size // 2, 2, seq_len)).to(
+            decoded.device
+        )
 
-        decoded_dict["predict"][:,0,:] = decoded[:batch_size // 2]
-        decoded_dict["predict"][:,1,:] = decoded[batch_size // 2:]
+        decoded_dict["predict"][:, 0, :] = decoded[: batch_size // 2]
+        decoded_dict["predict"][:, 1, :] = decoded[batch_size // 2 :]
 
         return decoded_dict

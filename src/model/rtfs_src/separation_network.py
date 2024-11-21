@@ -8,80 +8,78 @@ from .rnn_block import DualPathSRU
 from .rtfs_block import RTFSBlock
 
 
+def getrnn(rnn_type_str: str):
+    possible_types = {"SRU": SRU, "GRU": nn.GRU}
+    if rnn_type_str not in possible_types.keys():
+        raise Exception("Wronge RNN type")
+    return possible_types[rnn_type_str]
+
+
 class SeparationNetwork(nn.Module):
     def __init__(
         self,
         audio_channels: int,
         video_channels: int,
-        rtfs_repeats: int = 4,
-        rtfs_hid_channels: int = 64,
-        dual_path_hidden_channels: int = 32,
-        dual_path_num_layers: int = 4,
-        dual_path_rnn_type: nn.Module = SRU,
-        attention2d_features_dim: int = 64,
-        attention2d_hidden_channels: int = 4,
-        attention2d_num_heads: int = 4,
-        fusion_num_heads: int = 8,
+        rtfs_hid_channels: int,
+        rtfs_repeats: int,
+        downsample_rate_2d: int,
+        downsample_rate_1d: int,
+        rnn_type_str: str,
+        audio_network_kernel_size: int,
+        audio_network_stride: int,
+        video_network_kernel_size: int,
+        video_network_stride: int,
+        dual_path_rnn_params: dict,
+        attention2d_params: dict,
+        attention1d_params: dict,
+        CAF_params: dict,
     ) -> None:
         super(SeparationNetwork, self).__init__()
+
+        rnn_type = getrnn(rnn_type_str)
+
         self.audio_network = RTFSBlock(
             in_channels=audio_channels,
             hid_channels=rtfs_hid_channels,
-            kernel_size=4,
-            stride=2,
-            downsample_layers_count=2,
+            kernel_size=audio_network_kernel_size,
+            stride=audio_network_stride,
+            downsample_layers_count=downsample_rate_2d,
             is_conv_2d=True,
             attention_layers=nn.Sequential(
                 DualPathSRU(
-                    in_channels=rtfs_hid_channels,
-                    hidden_channels=dual_path_hidden_channels,
-                    kernel_size=8,
-                    num_layers=dual_path_num_layers,
-                    stride=1,
-                    bidirectional=True,
+                    **dual_path_rnn_params,
+                    rnn_type=rnn_type,
                     apply_to_time=False,
-                    rnn_type=dual_path_rnn_type,
                 ),
                 DualPathSRU(
-                    in_channels=rtfs_hid_channels,
-                    hidden_channels=dual_path_hidden_channels,
-                    kernel_size=8,
-                    stride=1,
-                    num_layers=dual_path_num_layers,
-                    bidirectional=True,
+                    **dual_path_rnn_params,
+                    rnn_type=rnn_type,
                     apply_to_time=True,
-                    rnn_type=dual_path_rnn_type,
                 ),
                 Attention2D(
-                    in_channels=rtfs_hid_channels,
-                    features_dim=attention2d_features_dim,
-                    hidden_channels=attention2d_hidden_channels,
-                    num_heads=attention2d_num_heads,
+                    **attention2d_params,
                 ),
             ),
         )
         self.video_network = RTFSBlock(
             in_channels=video_channels,
             hid_channels=rtfs_hid_channels,
-            kernel_size=3,
-            stride=2,
-            downsample_layers_count=4,
+            kernel_size=video_network_kernel_size,
+            stride=video_network_stride,
+            downsample_layers_count=downsample_rate_1d,
             is_conv_2d=False,
             attention_layers=nn.Sequential(
                 GlobalAttention1d(
-                    in_channels=rtfs_hid_channels,
-                    kernel_size=3,
-                    num_heads=8,
-                    dropout=0.1,
+                    **attention1d_params,
                 ),
             ),
         )
         self.rtfs_repeats = rtfs_repeats
 
         self.caf = CAF(
+            **CAF_params,
             audio_channels=audio_channels,
             video_channels=video_channels,
-            num_heads=fusion_num_heads,
         )
 
     def forward(
