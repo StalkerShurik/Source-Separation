@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from .conv_blocks import ConvBlockWithActivation
+
 
 class RTFS_AudioEncoder(nn.Module):
     def __init__(
@@ -15,27 +17,16 @@ class RTFS_AudioEncoder(nn.Module):
         self.hop_length: int = hop_length
         self.features: int = features
 
-        self.layers: nn.Module = nn.Sequential(
-            nn.Conv2d(
-                in_channels=2,
-                out_channels=output_channels,
-                kernel_size=kernel_size,
-                stride=1,
-                padding="same",
-                bias=False,
-            ),
-            # TODO: try to use Global normalization
-            nn.BatchNorm2d(output_channels),
-            nn.ReLU(),
-            # nn.Conv2d(
-            #     in_channels=output_channels,
-            #     out_channels=output_channels,
-            #     kernel_size=1,
-            #     stride=1,
-            # ),
+        self.layers = ConvBlockWithActivation(
+            in_channels=2,
+            out_channels=output_channels,
+            kernel_size=kernel_size,
+            is_conv_2d=True,
         )
 
-        self.window = nn.parameter.Parameter(torch.hann_window(window_length=self.features), requires_grad=False)
+        self.window = nn.parameter.Parameter(
+            torch.hann_window(window_length=self.features), requires_grad=False
+        )
 
     def forward(self, raw_audio: torch.Tensor) -> torch.Tensor:
         """
