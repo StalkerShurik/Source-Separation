@@ -1,8 +1,10 @@
 from abc import abstractmethod
 
+import numpy as np
 import torch
 from numpy import inf
 from torch.nn.utils import clip_grad_norm_
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm.auto import tqdm
 
 from src.datasets.data_utils import inf_loop
@@ -163,6 +165,8 @@ class BaseTrainer:
         and saving the best checkpoint).
         """
         not_improved_count = 0
+        if isinstance(self.lr_scheduler, ReduceLROnPlateau):
+            self.lr_scheduler.step(100)
         for epoch in range(self.start_epoch, self.epochs + 1):
             self._last_epoch = epoch
             result = self._train_epoch(epoch)
@@ -203,6 +207,7 @@ class BaseTrainer:
         self.train_metrics.reset()
         self.writer.set_step((epoch - 1) * self.epoch_len)
         self.writer.add_scalar("epoch", epoch)
+        all_losses = []
         for batch_idx, batch in enumerate(
             tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
         ):
@@ -229,6 +234,7 @@ class BaseTrainer:
                         epoch, self._progress(batch_idx), batch["loss"].item()
                     )
                 )
+                all_losses.append(batch["loss"].item())
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
@@ -242,6 +248,8 @@ class BaseTrainer:
                 break
 
         logs = last_train_metrics
+        if isinstance(self.lr_scheduler, ReduceLROnPlateau):
+            self.lr_scheduler.step(np.mean(all_losses))
 
         # Run val/test
         for part, dataloader in self.evaluation_dataloaders.items():
