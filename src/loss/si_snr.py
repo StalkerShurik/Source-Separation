@@ -25,7 +25,7 @@ class SiSNRLoss(nn.Module):
         """
         loss = self.metric(predict, target)
 
-        return {"loss": -loss.mean()}
+        return {"loss": -loss}
 
 
 class SimpleSiSNRLoss(nn.Module):
@@ -50,4 +50,4 @@ class SimpleSiSNRLoss(nn.Module):
             self.metric_func(predict[:, 0, :], target[:, 0, :]).mean()
             + self.metric_func(predict[:, 1, :], target[:, 1, :]).mean()
         )
-        return {"loss": loss}
+        return {"loss": -loss}
