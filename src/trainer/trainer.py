@@ -1,8 +1,8 @@
-import torch
-import typing as tp
+import matplotlib.pyplot as plt
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
-import matplotlib.pyplot as plt
 
 
 class Trainer(BaseTrainer):
@@ -38,7 +38,7 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
 
         outputs = self.model(**batch)
-        
+
         batch.update(outputs)
 
         all_losses = self.criterion(**batch)
@@ -48,7 +48,9 @@ class Trainer(BaseTrainer):
             batch["loss"].backward()  # sum of all losses is always called loss
             self._clip_grad_norm()
             self.optimizer.step()
-            if self.lr_scheduler is not None:
+            if self.lr_scheduler is not None and not isinstance(
+                self.lr_scheduler, ReduceLROnPlateau
+            ):
                 self.lr_scheduler.step()
 
         # update metrics for each loss (in case of multiple losses)
@@ -77,13 +79,17 @@ class Trainer(BaseTrainer):
         # logging scheme might be different for different partitions
 
         self.log_audio(
-            self.get_send_to_log(batch, *getattr(self.config.writer, f"log_audio_{mode}"))
+            self.get_send_to_log(
+                batch, *getattr(self.config.writer, f"log_audio_{mode}")
+            )
         )
 
         self.log_wave(
-            self.get_send_to_log(batch, *getattr(self.config.writer, f"log_wave_{mode}"))
+            self.get_send_to_log(
+                batch, *getattr(self.config.writer, f"log_wave_{mode}")
+            )
         )
-    
+
     def get_send_to_log(self, batch, *args):
         return {key: batch[key][0] for key in args}
 
@@ -99,4 +105,4 @@ class Trainer(BaseTrainer):
                 ax.set_title(f"{key}_{index + 1}")
                 ax.plot(audio.detach().cpu())
                 self.writer.add_image(f"{key}_{index + 1}", fig)
-                plt.close('all')
+                plt.close("all")
