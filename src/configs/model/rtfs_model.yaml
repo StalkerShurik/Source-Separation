@@ -9,12 +9,11 @@ separation_params:
         rtfs_repeats: 4
         downsample_rate_2d: 2
         rtfs_hid_channels: 64
-
+        rnn_type_str: SRU #SRU GRU supported
         dual_path_rnn_params:
           in_channels: ${model.separation_params.rtfs_hid_channels}
           hidden_channels: 32
           num_layers: 4
-          #rnn_type: SRU #SRU GRU supported
         attention2d_params:
           in_channels: ${model.separation_params.rtfs_hid_channels}
           features_dim: 64

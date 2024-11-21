@@ -8,6 +8,13 @@ from .rnn_block import DualPathSRU
 from .rtfs_block import RTFSBlock
 
 
+def getrnn(rnn_type_str: str):
+    possible_types = {"SRU": SRU, "GRU": nn.GRU}
+    if rnn_type_str not in possible_types.keys():
+        raise Exception("Wronge RNN type")
+    return possible_types[rnn_type_str]
+
+
 class SeparationNetwork(nn.Module):
     def __init__(
         self,
@@ -16,12 +23,16 @@ class SeparationNetwork(nn.Module):
         rtfs_hid_channels: int,
         rtfs_repeats: int,
         downsample_rate_2d: int,
+        rnn_type_str: str,
         dual_path_rnn_params: dict,
         attention2d_params: dict,
         attention1d_params: dict,
         CAF_params: dict,
     ) -> None:
         super(SeparationNetwork, self).__init__()
+
+        rnn_type = getrnn(rnn_type_str)
+
         self.audio_network = RTFSBlock(
             in_channels=audio_channels,
             hid_channels=rtfs_hid_channels,
@@ -32,7 +43,7 @@ class SeparationNetwork(nn.Module):
             attention_layers=nn.Sequential(
                 DualPathSRU(
                     **dual_path_rnn_params,
-                    rnn_type=SRU,
+                    rnn_type=rnn_type,
                     kernel_size=8,
                     stride=1,
                     bidirectional=True,
@@ -40,7 +51,7 @@ class SeparationNetwork(nn.Module):
                 ),
                 DualPathSRU(
                     **dual_path_rnn_params,
-                    rnn_type=SRU,
+                    rnn_type=rnn_type,
                     kernel_size=8,
                     stride=1,
                     bidirectional=True,
