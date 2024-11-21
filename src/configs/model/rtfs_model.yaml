@@ -8,12 +8,20 @@ encoder_params:
 separation_params:
         rtfs_repeats: 4
         downsample_rate_2d: 2
+        downsample_rate_1d: 4
         rtfs_hid_channels: 64
         rnn_type_str: SRU #SRU GRU supported
+        audio_network_kernel_size: 4
+        audio_network_stride: 2
+        video_network_kernel_size: 3
+        video_network_stride: 2
         dual_path_rnn_params:
           in_channels: ${model.separation_params.rtfs_hid_channels}
           hidden_channels: 32
           num_layers: 4
+          kernel_size: 8
+          stride: 1
+          bidirectional: True
         attention2d_params:
           in_channels: ${model.separation_params.rtfs_hid_channels}
           features_dim: 64
@@ -21,6 +29,7 @@ separation_params:
           num_heads: 4
         attention1d_params:
           in_channels: ${model.separation_params.rtfs_hid_channels}
+          kernel_size: 3
           num_heads: 8
           dropout: 0.1
         CAF_params:

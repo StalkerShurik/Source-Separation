@@ -23,7 +23,12 @@ class SeparationNetwork(nn.Module):
         rtfs_hid_channels: int,
         rtfs_repeats: int,
         downsample_rate_2d: int,
+        downsample_rate_1d: int,
         rnn_type_str: str,
+        audio_network_kernel_size: int,
+        audio_network_stride: int,
+        video_network_kernel_size: int,
+        video_network_stride: int,
         dual_path_rnn_params: dict,
         attention2d_params: dict,
         attention1d_params: dict,
@@ -36,25 +41,19 @@ class SeparationNetwork(nn.Module):
         self.audio_network = RTFSBlock(
             in_channels=audio_channels,
             hid_channels=rtfs_hid_channels,
-            kernel_size=4,
-            stride=2,
+            kernel_size=audio_network_kernel_size,
+            stride=audio_network_stride,
             downsample_layers_count=downsample_rate_2d,
             is_conv_2d=True,
             attention_layers=nn.Sequential(
                 DualPathSRU(
                     **dual_path_rnn_params,
                     rnn_type=rnn_type,
-                    kernel_size=8,
-                    stride=1,
-                    bidirectional=True,
                     apply_to_time=False,
                 ),
                 DualPathSRU(
                     **dual_path_rnn_params,
                     rnn_type=rnn_type,
-                    kernel_size=8,
-                    stride=1,
-                    bidirectional=True,
                     apply_to_time=True,
                 ),
                 Attention2D(
@@ -65,14 +64,13 @@ class SeparationNetwork(nn.Module):
         self.video_network = RTFSBlock(
             in_channels=video_channels,
             hid_channels=rtfs_hid_channels,
-            kernel_size=3,
-            stride=2,
-            downsample_layers_count=4,
+            kernel_size=video_network_kernel_size,
+            stride=video_network_stride,
+            downsample_layers_count=downsample_rate_1d,
             is_conv_2d=False,
             attention_layers=nn.Sequential(
                 GlobalAttention1d(
                     **attention1d_params,
-                    kernel_size=3,
                 ),
             ),
         )
