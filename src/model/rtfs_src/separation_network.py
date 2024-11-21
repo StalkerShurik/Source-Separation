@@ -13,15 +13,13 @@ class SeparationNetwork(nn.Module):
         self,
         audio_channels: int,
         video_channels: int,
+        rtfs_hid_channels: int,
         rtfs_repeats: int,
         downsample_rate_2d: int,
         dual_path_rnn_params: dict,
         attention2d_params: dict,
+        attention1d_params: dict,
         CAF_params: dict,
-        rtfs_hid_channels: int = 64,
-        attention2d_features_dim: int = 64,
-        attention2d_hidden_channels: int = 4,
-        attention2d_num_heads: int = 4,
     ) -> None:
         super(SeparationNetwork, self).__init__()
         self.audio_network = RTFSBlock(
@@ -35,7 +33,6 @@ class SeparationNetwork(nn.Module):
                 DualPathSRU(
                     **dual_path_rnn_params,
                     rnn_type=SRU,
-                    in_channels=rtfs_hid_channels,
                     kernel_size=8,
                     stride=1,
                     bidirectional=True,
@@ -44,17 +41,13 @@ class SeparationNetwork(nn.Module):
                 DualPathSRU(
                     **dual_path_rnn_params,
                     rnn_type=SRU,
-                    in_channels=rtfs_hid_channels,
                     kernel_size=8,
                     stride=1,
                     bidirectional=True,
                     apply_to_time=True,
                 ),
                 Attention2D(
-                    in_channels=rtfs_hid_channels,
-                    features_dim=attention2d_features_dim,
-                    hidden_channels=attention2d_hidden_channels,
-                    num_heads=attention2d_num_heads,
+                    **attention2d_params,
                 ),
             ),
         )
@@ -67,10 +60,8 @@ class SeparationNetwork(nn.Module):
             is_conv_2d=False,
             attention_layers=nn.Sequential(
                 GlobalAttention1d(
-                    in_channels=rtfs_hid_channels,
+                    **attention1d_params,
                     kernel_size=3,
-                    num_heads=8,
-                    dropout=0.1,
                 ),
             ),
         )

@@ -4,24 +4,28 @@ video_channels: 512
 encoder_params:
         hop_length: 128
         features: 256
+
 separation_params:
         rtfs_repeats: 4
         downsample_rate_2d: 2
-
+        rtfs_hid_channels: 64
 
         dual_path_rnn_params:
+          in_channels: ${model.separation_params.rtfs_hid_channels}
           hidden_channels: 32
           num_layers: 4
-          #rnn_type: sru.SRU
+          #rnn_type: SRU #SRU GRU supported
         attention2d_params:
-
+          in_channels: ${model.separation_params.rtfs_hid_channels}
+          features_dim: 64
+          hidden_channels: 4
+          num_heads: 4
+        attention1d_params:
+          in_channels: ${model.separation_params.rtfs_hid_channels}
+          num_heads: 8
+          dropout: 0.1
         CAF_params:
           num_heads: 8
-
-        # audio_processor:
-        # video_processor:
-
-
 
 decoder_parms:
         hop_length: ${model.encoder_params.hop_length}

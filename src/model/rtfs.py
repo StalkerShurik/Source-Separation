@@ -8,9 +8,6 @@ from .rtfs_src.separation_network import SeparationNetwork
 class RTFSModel(torch.nn.Module):
     def __init__(
         self,
-        # audio_encoder: torch.nn.Module,
-        # s3_decoder_block: torch.nn.Module,
-        # separation_network: torch.nn.Module,
         audio_channels: int,
         video_channels: int,
         encoder_params: dict,
