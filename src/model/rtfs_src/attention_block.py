@@ -183,6 +183,10 @@ class Attention1D(nn.Module):
 
 
 class GlobalAttention1d(nn.Module):
+    """
+    https://arxiv.org/pdf/2208.09878
+    """
+
     def __init__(
         self,
         in_channels: int,

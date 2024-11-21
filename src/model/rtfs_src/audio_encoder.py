@@ -7,9 +7,9 @@ from .conv_blocks import ConvBlockWithActivation
 class RTFS_AudioEncoder(nn.Module):
     def __init__(
         self,
-        hop_length: int = 128,
-        features: int = 256,
-        output_channels: int = 256,
+        hop_length: int,
+        features: int,
+        output_channels: int,
         kernel_size: int = 3,
     ) -> None:
         super().__init__()

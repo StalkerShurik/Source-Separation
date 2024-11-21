@@ -1,1 +1,29 @@
 _target_: src.model.RTFSModel
+audio_channels: 256
+video_channels: 512
+encoder_params:
+        hop_length: 128
+        features: 256
+separation_params:
+        rtfs_repeats: 4
+        downsample_rate_2d: 2
+
+
+        dual_path_rnn_params:
+          hidden_channels: 32
+          num_layers: 4
+          #rnn_type: sru.SRU
+        attention2d_params:
+
+        CAF_params:
+          num_heads: 8
+
+        # audio_processor:
+        # video_processor:
+
+
+
+decoder_parms:
+        hop_length: ${model.encoder_params.hop_length}
+        features: ${model.encoder_params.features}
+        length: 32000 #wav length

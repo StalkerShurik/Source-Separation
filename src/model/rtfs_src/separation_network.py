@@ -13,15 +13,15 @@ class SeparationNetwork(nn.Module):
         self,
         audio_channels: int,
         video_channels: int,
-        rtfs_repeats: int = 4,
+        rtfs_repeats: int,
+        downsample_rate_2d: int,
+        dual_path_rnn_params: dict,
+        attention2d_params: dict,
+        CAF_params: dict,
         rtfs_hid_channels: int = 64,
-        dual_path_hidden_channels: int = 32,
-        dual_path_num_layers: int = 4,
-        dual_path_rnn_type: nn.Module = SRU,
         attention2d_features_dim: int = 64,
         attention2d_hidden_channels: int = 4,
         attention2d_num_heads: int = 4,
-        fusion_num_heads: int = 8,
     ) -> None:
         super(SeparationNetwork, self).__init__()
         self.audio_network = RTFSBlock(
@@ -29,28 +29,26 @@ class SeparationNetwork(nn.Module):
             hid_channels=rtfs_hid_channels,
             kernel_size=4,
             stride=2,
-            downsample_layers_count=2,
+            downsample_layers_count=downsample_rate_2d,
             is_conv_2d=True,
             attention_layers=nn.Sequential(
                 DualPathSRU(
+                    **dual_path_rnn_params,
+                    rnn_type=SRU,
                     in_channels=rtfs_hid_channels,
-                    hidden_channels=dual_path_hidden_channels,
                     kernel_size=8,
-                    num_layers=dual_path_num_layers,
                     stride=1,
                     bidirectional=True,
                     apply_to_time=False,
-                    rnn_type=dual_path_rnn_type,
                 ),
                 DualPathSRU(
+                    **dual_path_rnn_params,
+                    rnn_type=SRU,
                     in_channels=rtfs_hid_channels,
-                    hidden_channels=dual_path_hidden_channels,
                     kernel_size=8,
                     stride=1,
-                    num_layers=dual_path_num_layers,
                     bidirectional=True,
                     apply_to_time=True,
-                    rnn_type=dual_path_rnn_type,
                 ),
                 Attention2D(
                     in_channels=rtfs_hid_channels,
@@ -79,9 +77,9 @@ class SeparationNetwork(nn.Module):
         self.rtfs_repeats = rtfs_repeats
 
         self.caf = CAF(
+            **CAF_params,
             audio_channels=audio_channels,
             video_channels=video_channels,
-            num_heads=fusion_num_heads,
         )
 
     def forward(
