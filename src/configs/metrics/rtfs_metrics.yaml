@@ -1,10 +1,10 @@
 device: "auto"
 train: # metrics that are calculated during training
-  - _target_: src.metrics.SimpleSiSNRLoss
+  - _target_: src.loss.SimpleSiSNRLoss
     device: ${metrics.device}
     name: "TRAIN_SiSNRI"
 inference: # metrics that are calculated during inference (eval)
-  - _target_: src.metrics.SimpleSiSNRLoss
+  - _target_: src.loss.SimpleSiSNRLoss
     device: ${metrics.device}
     name: "TEST_SiSNRI"
   # - _target_: src.metrics.PESQ
