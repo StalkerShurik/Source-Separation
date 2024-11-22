@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from .conv_blocks import ConvBlockWithActivation
-
 
 class RTFS_AudioEncoder(nn.Module):
     def __init__(
@@ -17,11 +15,18 @@ class RTFS_AudioEncoder(nn.Module):
         self.hop_length: int = hop_length
         self.features: int = features
 
-        self.layers = ConvBlockWithActivation(
-            in_channels=2,
-            out_channels=output_channels,
-            kernel_size=kernel_size,
-            is_conv_2d=True,
+        self.layers: nn.Module = nn.Sequential(
+            nn.Conv2d(
+                in_channels=2,
+                out_channels=output_channels,
+                kernel_size=kernel_size,
+                stride=1,
+                padding="same",
+                bias=False,
+            ),
+            # TODO: try to use Global normalization
+            nn.BatchNorm2d(output_channels),
+            nn.ReLU(),
         )
 
         self.window = nn.parameter.Parameter(

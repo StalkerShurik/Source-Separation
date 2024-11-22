@@ -7,7 +7,6 @@ encoder_params:
 
 separation_params:
   rtfs_repeats: 4
-  rnn_type_str: SRU #SRU GRU supported
 
   # audio net part
   audio_block_params:
@@ -34,7 +33,7 @@ separation_params:
     kernel_size: 3
     hid_channels: 64
     stride: 2
-    downsample_layers_count: 2
+    downsample_layers_count: 4
     is_conv_2d: false
   video_attention_params:
     in_channels: 64
@@ -42,7 +41,7 @@ separation_params:
     num_heads: 8
     dropout: 0.1
   # CAF params
-  CAF_params:
+  caf_params:
     num_heads: 8
 
 decoder_parms:

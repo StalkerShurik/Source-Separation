@@ -9,10 +9,9 @@ class DualPathSRU(nn.Module):
         self,
         in_channels: int,
         hidden_channels: int,
-        num_layers: int,
-        rnn_type: nn.Module,
         kernel_size: int = 8,
         stride: int = 1,
+        num_layers: int = 1,
         bidirectional: bool = True,
         apply_to_time: bool = False,
         *args,
@@ -38,7 +37,7 @@ class DualPathSRU(nn.Module):
 
         self.unfold = nn.Unfold((self.kernel_size, 1), stride=(self.stride, 1))
 
-        self.rnn = rnn_type(
+        self.sru = nn.GRU(
             input_size=self.unfolded_channels,
             hidden_size=self.hidden_channels,
             num_layers=self.num_layers,
@@ -70,7 +69,7 @@ class DualPathSRU(nn.Module):
         features = self.unfold(features)  # (B * T) x 8D x F'
 
         # (B * T) x 2h x F'
-        features = self.rnn(features.permute(0, 2, 1))[0].permute(0, 2, 1)  # apply SRU
+        features = self.sru(features.permute(0, 2, 1))[0].permute(0, 2, 1)  # apply SRU
 
         # (B * T) x D x F'
 

@@ -37,6 +37,7 @@ class RTFSModel(torch.nn.Module):
         self,
         mix: torch.Tensor,
         video_embed: torch.Tensor = None,
+        **kwargs,
     ) -> dict[str, torch.Tensor]:
         mix = torch.concat([mix, mix], dim=0)
 

@@ -5,7 +5,6 @@ import torch.nn.functional as F
 from .conv_blocks import ConvBlockWithActivation
 
 
-# CHECKED!
 class CAF(nn.Module):
     def __init__(self, audio_channels: int, video_channels: int, num_heads: int):
         super(CAF, self).__init__()
@@ -71,7 +70,7 @@ class CAF(nn.Module):
         video_attn = F.interpolate(video_attn, size=time_dim)
 
         video_key = self.video_conv_f2(video_features)
-        video_key = F.interpolate(video_key, size=time_dim)
+        video_key = torch.nn.functional.interpolate(video_key, size=time_dim)
 
         return (
             video_key.unsqueeze(-1) * audio_gate

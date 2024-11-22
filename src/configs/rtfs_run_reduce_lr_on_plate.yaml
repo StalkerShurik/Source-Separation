@@ -4,7 +4,7 @@ defaults:
   - metrics: rtfs_metrics
   - datasets: rtfs
   - dataloader: rtfs
-  - transforms: example
+  - transforms: rtfs
   - _self_
 optimizer:
   _target_: torch.optim.AdamW
