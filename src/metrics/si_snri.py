@@ -62,8 +62,8 @@ class SimpleSiSNRI(BaseMetric):
             + self.metric_func(mix, target[:, 1, :]).mean()
         )
         model_metric = 0.5 * (
-            self.metric_func(predict[:, 0, :], target[:, 1, :]).mean()
-            + self.metric_func(predict[:, 1, :], target[:, 0, :]).mean()
+            self.metric_func(predict[:, 0, :], target[:, 0, :]).mean()
+            + self.metric_func(predict[:, 1, :], target[:, 1, :]).mean()
         )
 
         return model_metric - baseline_metric
