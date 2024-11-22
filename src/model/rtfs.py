@@ -37,8 +37,8 @@ class RTFSModel(torch.nn.Module):
         self,
         mix: torch.Tensor,
         video_embed: torch.Tensor = None,
-        **kwargs,  # B, N, T, F
-    ) -> torch.Tensor:
+        **kwargs,
+    ) -> dict[str, torch.Tensor]:
         mix = torch.concat([mix, mix], dim=0)
 
         audio_features = self.audio_encoder(raw_audio=mix)  # B, 1, L -> B, N, T, (F)

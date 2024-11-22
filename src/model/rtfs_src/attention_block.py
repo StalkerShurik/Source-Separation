@@ -17,8 +17,6 @@ class Attention2D(nn.Module):
         hidden_channels: int,
         features_dim: int,
         num_heads: int,
-        *args,
-        **kwargs,  # E
     ):
         super(Attention2D, self).__init__()
 
@@ -67,22 +65,21 @@ class Attention2D(nn.Module):
             features_dim=features_dim,
         )
 
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
+    def forward(self, inp: torch.Tensor) -> torch.Tensor:
         """
         input shape: B x C x T x F
         output shape: B x C x T x F
         """
-        # TODO: REWRITE
-        input_residual = input
+        input_residual = inp
         # B x Heads x HidChannels x T x F
         q_values = torch.concat(
-            [q_head(input).unsqueeze(0) for q_head in self.q_heads], dim=0
+            [q_head(inp).unsqueeze(0) for q_head in self.q_heads], dim=0
         ).transpose(0, 1)
         k_values = torch.concat(
-            [k_head(input).unsqueeze(0) for k_head in self.k_heads], dim=0
+            [k_head(inp).unsqueeze(0) for k_head in self.k_heads], dim=0
         ).transpose(0, 1)
         v_values = torch.concat(
-            [v_head(input).unsqueeze(0) for v_head in self.v_heads], dim=0
+            [v_head(inp).unsqueeze(0) for v_head in self.v_heads], dim=0
         ).transpose(0, 1)
 
         # B x Heads x T x HidChannels x F
@@ -190,11 +187,9 @@ class GlobalAttention1d(nn.Module):
     def __init__(
         self,
         in_channels: int,
-        kernel_size: int = 5,
-        num_heads: int = 8,
-        dropout: float = 0.1,
-        *args,
-        **kwargs,
+        kernel_size: int,
+        num_heads: int,
+        dropout: float,
     ) -> None:
         super(GlobalAttention1d, self).__init__()
         self.in_channels = in_channels

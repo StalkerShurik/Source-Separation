@@ -4,7 +4,7 @@ defaults:
   - metrics: rtfs_metrics
   - datasets: rtfs
   - dataloader: rtfs
-  - transforms: example
+  - transforms: rtfs
   - _self_
 optimizer:
   _target_: torch.optim.AdamW
@@ -23,7 +23,7 @@ trainer:
   n_epochs: 20
   epoch_len: 5000
   device_tensors: ["mix", "target", "video_embed"] # which tensors should be on device (ex. GPU)
-  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  resume_from: 'pretrain.pth' # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
   override: True # if True, will override the previous run with the same name
   monitor: "max SiSNRI" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric

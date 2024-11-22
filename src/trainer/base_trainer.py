@@ -1,6 +1,5 @@
 from abc import abstractmethod
 
-import numpy as np
 import torch
 from numpy import inf
 from torch.nn.utils import clip_grad_norm_
