@@ -138,12 +138,12 @@ class Inferencer(BaseTrainer):
         ):
             torchaudio.save(
                 uri=self.save_path / (speaker_1_id.split(".")[0] + ".wav"),
-                src=prediction[0, :].unsqueeze(0),
+                src=prediction[0, :].cpu().unsqueeze(0),
                 sample_rate=16_000,
             )
             torchaudio.save(
                 uri=self.save_path / (speaker_1_id.split(".")[0] + ".wav"),
-                src=prediction[1, :].unsqueeze(0),
+                src=prediction[1, :].cpu().unsqueeze(0),
                 sample_rate=16_000,
             )
 
