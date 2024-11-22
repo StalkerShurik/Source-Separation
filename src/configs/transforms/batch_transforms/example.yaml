@@ -1,2 +1,4 @@
-train: null
+train:
+  mix: # name of the tensor on which we apply transform
+    _target_: src.transforms.AddNoize1D
 inference: null

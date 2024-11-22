@@ -22,7 +22,7 @@ class SpectralSourceSeparationDecoder(nn.Module):
 
         self.preact = nn.PReLU()
 
-        self.M: nn.Module = ConvBlockWithActivation(
+        self.masker: nn.Module = ConvBlockWithActivation(
             in_channels=input_channels,
             out_channels=input_channels,
             kernel_size=1,
@@ -30,12 +30,13 @@ class SpectralSourceSeparationDecoder(nn.Module):
         )
         self.input_channels: int = input_channels
 
-        self.map_to_stft: nn.Module = ConvBlockWithActivation(
+        self.map_to_stft: nn.Module = nn.ConvTranspose2d(
             in_channels=input_channels,
             out_channels=2,
             kernel_size=3,
-            is_conv_2d=True,
-            activation_function=nn.Identity,
+            padding=1,
+            stride=1,
+            bias=False,
         )
 
         self.features = features
@@ -47,7 +48,7 @@ class SpectralSourceSeparationDecoder(nn.Module):
 
     def forward(self, processed_audio: torch.Tensor, original_audio: torch.Tensor):
         processed_audio = self.preact(processed_audio)
-        processed_audio = self.M(processed_audio)
+        processed_audio = self.masker(processed_audio)
 
         processed_real = processed_audio[:, : self.input_channels // 2]
         processed_img = processed_audio[:, self.input_channels // 2 :]
