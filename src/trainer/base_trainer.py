@@ -207,7 +207,6 @@ class BaseTrainer:
         self.train_metrics.reset()
         self.writer.set_step((epoch - 1) * self.epoch_len)
         self.writer.add_scalar("epoch", epoch)
-        all_losses = []
         for batch_idx, batch in enumerate(
             tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
         ):
@@ -234,7 +233,6 @@ class BaseTrainer:
                         epoch, self._progress(batch_idx), batch["loss"].item()
                     )
                 )
-                all_losses.append(batch["loss"].item())
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
@@ -248,13 +246,14 @@ class BaseTrainer:
                 break
 
         logs = last_train_metrics
-        if isinstance(self.lr_scheduler, ReduceLROnPlateau):
-            self.lr_scheduler.step(np.mean(all_losses))
 
         # Run val/test
         for part, dataloader in self.evaluation_dataloaders.items():
             val_logs = self._evaluation_epoch(epoch, part, dataloader)
             logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
+
+        if isinstance(self.lr_scheduler, ReduceLROnPlateau):
+            self.lr_scheduler.step(logs["val_loss"])
 
         return logs
 
