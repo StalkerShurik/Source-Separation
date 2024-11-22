@@ -2,6 +2,7 @@ import warnings
 
 import hydra
 import torch
+import torch.nn as nn
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 
@@ -39,6 +40,13 @@ def main(config):
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
+    for name, param in model.named_parameters():
+        if "bias" in name:
+            nn.init.constant_(param, 0.0)
+        elif len(param.shape) < 2:
+            continue
+        else:
+            nn.init.xavier_uniform_(param)
     logger.info(model)
 
     # get function handles of loss and metrics
