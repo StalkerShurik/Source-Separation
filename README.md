@@ -1,3 +1,36 @@
+# Source Separation
+
+## Embeddings
+
+Код для извлечения эмбеддингв взяли из [репозитория](https://github.com/mpc001/Lipreading_using_Temporal_Convolutional_Networks/tree/master?tab=readme-ov-file).
+Мы починили неработающий инференс и сохранили в свой [репозиторий](https://github.com/dikirillov/Lipreading_using_Temporal_Convolutional_Networks/).
+
+Инструкция для получения эмбеддингов видео:
+
+Подготовка:
+```
+git clone https://github.com/dikirillov/Lipreading_using_Temporal_Convolutional_Networks/
+pip install -r Lipreading_using_Temporal_Convolutional_Networks/requirements.txt
+```
+
+Извлечение:
+
+Необходимо скачать стейт модели по [ссылке](https://drive.google.com/file/d/1TGFG0dW5M3rBErgU8i0N7M1ys9YMIvgm/view).
+
+В качестве конфига модели необходимо указать `configs/lrw_resnet18_dctcn_boundary.json`
+
+Чтобы получить эмбеддинги необходимо запустить следующую команду, в `<MOUTH-PATCH-PATH>` должна быть директория `mouths`, обработанные эмбеддинги будут сохранены в `<MOUTH-PATCH-PATH>\mouths_embeds`
+
+```Shell
+python3 main.py --modality video \
+                                      --extract-feats \
+                                      --config-path <MODEL-JSON-PATH> \
+                                      --model-path <MODEL-PATH> \
+                                      --mouth-patch-path <MOUTH-PATCH-PATH>
+```
+
+
+
 # PyTorch Template for DL projects
 
 <p align="center">
