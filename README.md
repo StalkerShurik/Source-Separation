@@ -130,3 +130,7 @@ You can use inference.py to generate separated audio from your dataset:
 ```bash
 python3 inference.py
 ```
+Before that you should configure run in 'configs/inference.yaml':
+0) You should set path to your dataset in config 'configs/datasets/rtfs_eval.yaml'.
+1) You should set path to checpoint file in from_pretrained field.
+2) You may change save_path.
