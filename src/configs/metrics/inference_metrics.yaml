@@ -7,3 +7,12 @@ inference: # metrics that are calculated during inference (eval)
   - _target_: src.metrics.SimpleSiSNRI
     device: ${metrics.device}
     name: "TEST_SiSNRI"
+  - _target_: src.metrics.PESQ
+    device: ${metrics.device}
+    name: "TEST_PESQ"
+  - _target_: src.metrics.STOI
+    device: ${metrics.device}
+    name: "TEST_STOI"
+  - _target_: src.metrics.SDRI
+    device: ${metrics.device}
+    name: "TEST_SDRI"

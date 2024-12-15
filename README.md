@@ -128,9 +128,22 @@ python3 train.py dataset
 You can use inference.py to generate separated audio from your dataset:
 
 ```bash
-python3 inference.py
+HYDRA_FULL_ERROR=1 python inference.py \
+ datasets.inference.part=null +datasets.inference.dataset_dir='PATH_TO_YOUR_DATASET' \
+ inferencer.save_path='PATH_TO_SAVE'
 ```
-Before that you should configure run in 'configs/inference.yaml':
-0) You should set path to your dataset in config 'configs/datasets/rtfs_eval.yaml'.
-1) You should set path to checpoint file in from_pretrained field.
-2) You may change save_path.
+
+PATH_TO_YOUR_DATASET - path to your dataset folder, it should be located in data folder
+and contain audio, mouth and mouth_embeds folder.
+
+PATH_TO_SAVE - path where you want to save your files(they will be located in 'data/saved/PATH_TO_SAVE')
+
+
+If you also want to calculate metrics you should add s1 and s2 folders to your audio folder and then run:
+
+```bash
+HYDRA_FULL_ERROR=1 python inference.py \
+ datasets.inference.part=null +datasets.inference.dataset_dir='PATH_TO_YOUR_DATASET' \
+ inferencer.save_path='PATH_TO_SAVE' \
+ metrics=inference_metrics
+```
