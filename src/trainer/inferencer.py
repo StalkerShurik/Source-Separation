@@ -142,7 +142,7 @@ class Inferencer(BaseTrainer):
                 sample_rate=16_000,
             )
             torchaudio.save(
-                uri=self.save_path / (speaker_1_id.split(".")[0] + ".wav"),
+                uri=self.save_path / (speaker_2_id.split(".")[0] + ".wav"),
                 src=prediction[1, :].cpu().unsqueeze(0),
                 sample_rate=16_000,
             )
