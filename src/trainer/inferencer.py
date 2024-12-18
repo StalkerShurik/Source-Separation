@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 import torchaudio
 from tqdm.auto import tqdm
@@ -66,7 +68,11 @@ class Inferencer(BaseTrainer):
 
         # path definition
 
-        self.save_path = save_path
+        self.save_path = Path(save_path)
+        self.save_path_speaker_1 = save_path / "predicted_s1"
+        self.save_path_speaker_1.mkdir(parents=True, exist_ok=True)
+        self.save_path_speaker_2 = save_path / "predicted_s2"
+        self.save_path_speaker_2.mkdir(parents=True, exist_ok=True)
 
         # define metrics
         self.metrics = metrics
@@ -136,13 +142,17 @@ class Inferencer(BaseTrainer):
             batch["speaker_1"],
             batch["speaker_2"],
         ):
+            file_name = (
+                f'{speaker_1_id.split(".")[0]}_' f'{speaker_2_id.split(".")[0]}.wav'
+            )
+
             torchaudio.save(
-                uri=self.save_path / (speaker_1_id.split(".")[0] + ".wav"),
+                uri=self.save_path_speaker_1 / file_name,
                 src=prediction[0, :].cpu().unsqueeze(0),
                 sample_rate=16_000,
             )
             torchaudio.save(
-                uri=self.save_path / (speaker_2_id.split(".")[0] + ".wav"),
+                uri=self.save_path_speaker_2 / file_name,
                 src=prediction[1, :].cpu().unsqueeze(0),
                 sample_rate=16_000,
             )
